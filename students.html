@@ -92,6 +92,36 @@
     </table>
 </div>
 
+<div id="editModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:30px; border-radius:12px; width:400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+        <h3 style="margin-top:0;">📝 Редагувати дані учня</h3>
+        <input type="hidden" id="editIndex">
+        <div style="margin-bottom:15px;">
+            <label>Прізвище:</label>
+            <input type="text" id="editLastName" style="width:100%; padding:8px; margin-top:5px;">
+        </div>
+        <div style="margin-bottom:15px;">
+            <label>Ім'я:</label>
+            <input type="text" id="editFirstName" style="width:100%; padding:8px; margin-top:5px;">
+        </div>
+        <div style="margin-bottom:15px;">
+            <label>Дата народження:</label>
+            <input type="date" id="editBirthDate" style="width:100%; padding:8px; margin-top:5px;">
+        </div>
+        <div style="margin-bottom:15px;">
+            <label>Стать:</label>
+            <select id="editGender" style="width:100%; padding:8px; margin-top:5px;">
+                <option value="Хлопчик">Хлопчик</option>
+                <option value="Дівчинка">Дівчинка</option>
+            </select>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button onclick="closeEditModal()" style="background:#95a5a6; border:none; padding:10px 15px; color:white; border-radius:5px; cursor:pointer;">Скасувати</button>
+            <button onclick="saveStudentEdit()" style="background:#3498db; border:none; padding:10px 15px; color:white; border-radius:5px; cursor:pointer;">Зберегти зміни</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const addBtn = document.getElementById('addBtn');
     const list = document.getElementById('studentList');
@@ -178,6 +208,44 @@
     };
     
     renderStudents();
+
+    // Відкрити вікно з даними учня
+    window.openEditModal = function(index) {
+        const student = students[index];
+        document.getElementById('editIndex').value = index;
+        document.getElementById('editLastName').value = student.lastName;
+        document.getElementById('editFirstName').value = student.firstName;
+        document.getElementById('editBirthDate').value = student.birthDate;
+        document.getElementById('editGender').value = student.gender;
+        
+        document.getElementById('editModal').style.display = 'flex';
+    };
+    
+    // Закрити вікно
+    window.closeEditModal = function() {
+        document.getElementById('editModal').style.display = 'none';
+    };
+    
+    // Зберегти оновлені дані
+    window.saveStudentEdit = function() {
+        const index = document.getElementById('editIndex').value;
+        
+        // Оновлюємо об'єкт у масиві
+        students[index] = {
+            lastName: document.getElementById('editLastName').value,
+            firstName: document.getElementById('editFirstName').value,
+            birthDate: document.getElementById('editBirthDate').value,
+            gender: document.getElementById('editGender').value
+        };
+    
+        // Зберігаємо в localStorage
+        localStorage.setItem('class_3b_students_v2', JSON.stringify(students));
+        
+        // Оновлюємо таблицю на сторінці та закриваємо вікно
+        renderStudents(); 
+        closeEditModal();
+        alert('Дані учня успішно оновлено!');
+    };
 </script>
 
 </body>
