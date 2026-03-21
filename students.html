@@ -95,21 +95,23 @@
 <script>
     const addBtn = document.getElementById('addBtn');
     const list = document.getElementById('studentList');
-
+    
     let students = JSON.parse(localStorage.getItem('class_3b_students_v2')) || [];
-
-    // Функція розрахунку віку
+    
+    // Функція розрахунку віку (повертає точну кількість років)
     function calculateAge(birthday) {
         const birthDate = new Date(birthday);
         const today = new Date();
         let age = today.getFullYear() - birthDate.getFullYear();
         const m = today.getMonth() - birthDate.getMonth();
+        
+        // Коригування, якщо день народження ще не настав у цьому році
         if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
             age--;
         }
-        return age || 0;
+        return age;
     }
-
+    
     function renderStudents() {
         list.innerHTML = '';
         students.forEach((s, index) => {
@@ -129,20 +131,29 @@
         });
         localStorage.setItem('class_3b_students_v2', JSON.stringify(students));
     }
-
+    
     addBtn.addEventListener('click', () => {
-        const fName = document.getElementById('firstName').value;
-        const lName = document.getElementById('lastName').value;
+        const fName = document.getElementById('firstName').value.trim();
+        const lName = document.getElementById('lastName').value.trim();
         const gender = document.getElementById('gender').value;
         const bDate = document.getElementById('birthDate').value;
-
+    
         if (fName && lName && bDate) {
+            const currentAge = calculateAge(bDate);
+    
+            // ПЕРЕВІРКА ВІКУ
+            if (currentAge < 9) {
+                alert(`Помилка: Учень надто молодий (${currentAge} р.). Для 3-го класу вік має бути не менше 9 років.`);
+                return; // Перериваємо виконання функції
+            }
+    
             const newStudent = {
                 firstName: fName,
                 lastName: lName,
                 gender: gender,
                 birthDate: bDate
             };
+    
             students.push(newStudent);
             
             // Очищення полів
@@ -155,14 +166,14 @@
             alert('Будь ласка, заповніть усі поля');
         }
     });
-
+    
     window.deleteStudent = (index) => {
         if(confirm('Видалити учня зі списку?')) {
             students.splice(index, 1);
             renderStudents();
         }
     };
-
+    
     renderStudents();
 </script>
 
