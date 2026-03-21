@@ -150,34 +150,81 @@
         </div>
         <p id="class-summary" style="color: #7f8c8d; margin: 0;"></p>
     </div>
+    <div id="hw-widget" style="margin-top: 20px; padding: 25px; background: #fff; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-left: 8px solid #3498db;">
+        <h3 style="margin: 0 0 15px 0; color: #2c3e50; display: flex; align-items: center; gap: 10px;">
+            <span>📝</span> План на наступний урок:
+        </h3>
+        <div id="hw-list-container">
+            <p style="color: #95a5a6; font-style: italic;">Завантаження завдань...</p>
+        </div>
+    </div>
 </div>
 
 <script>
-    // Логіка оновлення даних
     function updateDashboard() {
         const students = JSON.parse(localStorage.getItem('class_3b_students_v2')) || [];
+        const allGrades = JSON.parse(localStorage.getItem('class_3b_grades_v2')) || {};
+        const allHomework = JSON.parse(localStorage.getItem('class_3b_hw_v2')) || {};
         const now = new Date();
         
         // 1. Дата
         const options = { weekday: 'long', month: 'long', day: 'numeric' };
         document.getElementById('today-date').innerText = now.toLocaleDateString('uk-UA', options);
 
-        // 2. Статистика
+        // 2. Статистика учнів
         const boys = students.filter(s => s.gender === 'Хлопчик').length;
         const girls = students.filter(s => s.gender === 'Дівчинка').length;
         document.getElementById('class-summary').innerText = 
-            `Сьогодні навчається ${students.length} учнів (${boys} хлопчиків та ${girls} дівчаток).`;
+            `У класі ${students.length} учнів (${boys} хлопчиків та ${girls} дівчаток).`;
 
-        // 3. Іменинники (порівнюємо ММ-ДД)
+        // 3. Іменинники
         const currentMonthDay = now.toISOString().slice(5, 10);
         const bdayStudent = students.find(s => s.birthDate && s.birthDate.slice(5, 10) === currentMonthDay);
-
         const bdayTag = document.getElementById('birthday-tag');
+        
         if (bdayStudent) {
-            bdayTag.innerHTML = `🎂 Світле свято у <strong>${bdayStudent.firstName}</strong>!`;
+            bdayTag.innerHTML = `🎂 Сьогодні день народження у <strong>${bdayStudent.firstName}</strong>!`;
         } else {
-            bdayTag.innerText = "🎈 Сьогодні без святкувань";
+            bdayTag.innerText = "🎈 Сьогодні без іменинників";
         }
+
+        // 4. ЛОГІКА ДОМАШНЬОГО ЗАВДАННЯ
+        const hwContainer = document.getElementById('hw-list-container');
+        const subjects = {
+            math: "Математика",
+            ukr: "Українська мова",
+            reading: "Читання",
+            eng: "Англійська мова",
+            world: "Я досліджую світ"
+        };
+
+        let hwHTML = "";
+        let foundAny = false;
+
+        Object.keys(subjects).forEach(subKey => {
+            // Знаходимо останній проведений урок (де є оцінки або ДЗ)
+            let lastLesson = 0;
+            for (let i = 1; i <= 12; i++) {
+                if (allHomework[`${subKey}_hw_${i}`]) {
+                    lastLesson = i;
+                }
+            }
+
+            // Показуємо завдання на наступний урок
+            const nextLesson = lastLesson; // Зазвичай вчитель записує ДЗ НА поточний номер уроку
+            const task = allHomework[`${subKey}_hw_${nextLesson}`];
+
+            if (task) {
+                hwHTML += `
+                    <div style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed #eee;">
+                        <strong style="color: #3498db;">${subjects[subKey]}:</strong> 
+                        <span style="color: #34495e;">${task}</span>
+                    </div>`;
+                foundAny = true;
+            }
+        });
+
+        hwContainer.innerHTML = foundAny ? hwHTML : '<p style="color: #95a5a6;">На сьогодні завдань не знайдено. Заповніть їх у журналі.</p>';
     }
 
     document.addEventListener('DOMContentLoaded', updateDashboard);
