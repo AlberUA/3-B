@@ -56,6 +56,7 @@
                 <tr id="headerRow">
                     <th>№</th>
                     <th>Прізвище та Ім'я</th>
+                    <th>Сер. бал</th>
                     </tr>
             </thead>
             <tbody id="journalBody"></tbody>
@@ -97,12 +98,21 @@
                 <td>${sIdx + 1}</td>
                 <td class="student-name">${fullName}</td>`;
             
+            let sum = 0;
+            let count = 0;
+            
             for(let i=1; i<=cols; i++) {
                 const gradeKey = `${subject}_${sIdx}_${i}`;
                 const val = allGrades[gradeKey] || '';
-                row += `<td><input type="text" class="grade" data-key="${gradeKey}" value="${val}" maxlength="2"></td>`;
+                if (val && !isNaN(val)) { 
+                    sum += parseInt(val); 
+                    count++; 
+                }
+                row += `<td><input type="text" class="grade" oninput="updateAverage(${sIdx})" data-key="${gradeKey}" value="${val}" maxlength="2"></td>`;
             }
-            row += `</tr>`;
+            
+            const avg = count > 0 ? (sum / count).toFixed(1) : '-';
+            row += `<td id="avg-${sIdx}" style="font-weight:bold; color:#27ae60;">${avg}</td></tr>`;
             journalBody.innerHTML += row;
         });
     }
