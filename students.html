@@ -3,83 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Список учнів</title>
+    <title>Список учнів з деталями</title>
     <style>
-        :root { --primary: #2ecc71; --bg: #f9f9f9; }
-        body { font-family: sans-serif; background: var(--bg); padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        .back-link { display: inline-block; margin-bottom: 20px; color: #7f8c8d; text-decoration: none; }
+        :root { --primary: #2ecc71; --bg: #f4f7f6; --dark: #34495e; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: var(--dark); }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
         
-        .form-group { display: flex; gap: 10px; margin-bottom: 30px; }
-        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; outline: none; }
-        button#addBtn { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        .back-link { display: inline-block; margin-bottom: 20px; color: #7f8c8d; text-decoration: none; font-weight: 500; }
+        h2 { margin-top: 0; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+
+        /* Стилі форми */
+        .form-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+            gap: 15px; 
+            background: #f9f9f9; 
+            padding: 20px; 
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .form-group { display: flex; flex-direction: column; }
+        label { font-size: 0.85em; margin-bottom: 5px; color: #666; }
+        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; outline: none; }
         
-        table { width: 100%; border-collapse: collapse; }
+        button#addBtn { 
+            grid-column: 1 / -1; 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            padding: 12px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        button#addBtn:hover { background: #27ae60; }
+
+        /* Таблиця */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
-        th { color: #7f8c8d; font-size: 0.9em; text-transform: uppercase; }
+        th { background: #fcfcfc; color: #95a5a6; font-size: 0.8em; text-transform: uppercase; }
         .delete-btn { color: #e74c3c; cursor: pointer; border: none; background: none; font-size: 1.2em; }
+        
+        .gender-icon { font-size: 1.1em; margin-right: 5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <a href="index.html" class="back-link">← Назад до кабінету</a>
-    <h2>Список учнів класу</h2>
+    <h2>Реєстрація учнів 3-Б класу</h2>
 
-    <div class="form-group">
-        <input type="text" id="studentName" placeholder="Прізвище та ім'я учня">
-        <button id="addBtn">Додати</button>
+    <div class="form-grid">
+        <div class="form-group">
+            <label>Прізвище</label>
+            <input type="text" id="lastName" placeholder="Петренко">
+        </div>
+        <div class="form-group">
+            <label>Ім'я</label>
+            <input type="text" id="firstName" placeholder="Іван">
+        </div>
+        <div class="form-group">
+            <label>Стать</label>
+            <select id="gender">
+                <option value="Хлопчик">Хлопчик</option>
+                <option value="Дівчинка">Дівчинка</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Дата народження</label>
+            <input type="date" id="birthDate">
+        </div>
+        <button id="addBtn">Додати учня до списку</button>
     </div>
 
     <table id="studentsTable">
         <thead>
             <tr>
                 <th>№</th>
-                <th>ПІБ Учня</th>
+                <th>Прізвище та Ім'я</th>
+                <th>Стать</th>
+                <th>Дата нар.</th>
+                <th>Вік</th>
                 <th>Дія</th>
             </tr>
         </thead>
-        <tbody id="studentList">
-            </tbody>
+        <tbody id="studentList"></tbody>
     </table>
 </div>
 
 <script>
     const addBtn = document.getElementById('addBtn');
-    const input = document.getElementById('studentName');
     const list = document.getElementById('studentList');
 
-    // Завантаження даних
-    let students = JSON.parse(localStorage.getItem('class_3b_students')) || [];
+    let students = JSON.parse(localStorage.getItem('class_3b_students_v2')) || [];
+
+    // Функція розрахунку віку
+    function calculateAge(birthday) {
+        const birthDate = new Date(birthday);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        return age || 0;
+    }
 
     function renderStudents() {
         list.innerHTML = '';
-        students.forEach((name, index) => {
+        students.forEach((s, index) => {
+            const age = calculateAge(s.birthDate);
+            const genderSymbol = s.gender === 'Хлопчик' ? '👦' : '👧';
+            
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${index + 1}</td>
-                <td>${name}</td>
+                <td><strong>${s.lastName}</strong> ${s.firstName}</td>
+                <td><span class="gender-icon">${genderSymbol}</span> ${s.gender}</td>
+                <td>${s.birthDate}</td>
+                <td>${age} р.</td>
                 <td><button class="delete-btn" onclick="deleteStudent(${index})">&times;</button></td>
             `;
             list.appendChild(tr);
         });
-        localStorage.setItem('class_3b_students', JSON.stringify(students));
+        localStorage.setItem('class_3b_students_v2', JSON.stringify(students));
     }
 
     addBtn.addEventListener('click', () => {
-        if (input.value.trim()) {
-            students.push(input.value.trim());
-            input.value = '';
+        const fName = document.getElementById('firstName').value;
+        const lName = document.getElementById('lastName').value;
+        const gender = document.getElementById('gender').value;
+        const bDate = document.getElementById('birthDate').value;
+
+        if (fName && lName && bDate) {
+            const newStudent = {
+                firstName: fName,
+                lastName: lName,
+                gender: gender,
+                birthDate: bDate
+            };
+            students.push(newStudent);
+            
+            // Очищення полів
+            document.getElementById('firstName').value = '';
+            document.getElementById('lastName').value = '';
+            document.getElementById('birthDate').value = '';
+            
             renderStudents();
+        } else {
+            alert('Будь ласка, заповніть усі поля');
         }
     });
 
     window.deleteStudent = (index) => {
-        students.splice(index, 1);
-        renderStudents();
+        if(confirm('Видалити учня зі списку?')) {
+            students.splice(index, 1);
+            renderStudents();
+        }
     };
 
-    // Перший рендер
     renderStudents();
 </script>
 
