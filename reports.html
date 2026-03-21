@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Звіти та Прогрес | 3-Б</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --primary: #3498db; --bg: #f4f7f6; --dark: #2c3e50; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: var(--dark); }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+        
+        .controls { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 20px; 
+            margin-bottom: 30px; 
+            background: #f9f9f9; 
+            padding: 20px; 
+            border-radius: 10px;
+        }
+        
+        select { padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 1em; outline: none; }
+        
+        .chart-container { position: relative; height: 400px; width: 100%; }
+        
+        .back-link { display: inline-block; margin-bottom: 20px; color: #7f8c8d; text-decoration: none; font-weight: 500; }
+        h2 { margin-top: 0; color: var(--primary); }
+        
+        .no-data { text-align: center; padding: 50px; color: #95a5a6; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="index.html" class="back-link">← Назад до кабінету</a>
+    <h2>📈 Індивідуальний прогрес учня</h2>
+
+    <div class="controls">
+        <div>
+            <label style="display:block; margin-bottom:5px; font-size:0.8em; color:#666;">Оберіть учня:</label>
+            <select id="studentSelect" onchange="updateChart()"></select>
+        </div>
+        <div>
+            <label style="display:block; margin-bottom:5px; font-size:0.8em; color:#666;">Оберіть предмет:</label>
+            <select id="subjectSelect" onchange="updateChart()">
+                <option value="math">Математика</option>
+                <option value="ukr">Українська мова</option>
+                <option value="reading">Читання</option>
+                <option value="eng">Англійська мова</option>
+                <option value="world">Я досліджую світ</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="chartWrapper" class="chart-container">
+        <canvas id="progressChart"></canvas>
+    </div>
+    <div id="emptyMsg" class="no-data" style="display:none;">Оцінок за цим предметом поки що немає.</div>
+</div>
+
+<script>
+    let students = JSON.parse(localStorage.getItem('class_3b_students_v2')) || [];
+    let allGrades = JSON.parse(localStorage.getItem('class_3b_grades_v2')) || {};
+    let myChart = null;
+
+    // 1. Наповнюємо список учнів
+    const studentSelect = document.getElementById('studentSelect');
+    if (students.length === 0) {
+        studentSelect.innerHTML = '<option value="">Спершу додайте учнів</option>';
+    } else {
+        students.forEach((s, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = `${s.lastName} ${s.firstName}`;
+            studentSelect.appendChild(option);
+        });
+    }
+
+    // 2. Функція оновлення графіка
+    window.updateChart = function() {
+        const sIdx = studentSelect.value;
+        const subject = document.getElementById('subjectSelect').value;
+        
+        if (sIdx === "" || students.length === 0) return;
+
+        let gradesArray = [];
+        let labelsArray = [];
+        let hasData = false;
+
+        // Збираємо оцінки (12 уроків)
+        for(let i=1; i<=12; i++) {
+            const val = allGrades[`${subject}_${sIdx}_${i}`];
+            labelsArray.push(`Урок ${i}`);
+            if (val && !isNaN(val)) {
+                gradesArray.push(parseInt(val));
+                hasData = true;
+            } else {
+                gradesArray.push(null); // Пропуск, якщо оцінки немає
+            }
+        }
+
+        // Візуалізація
+        const ctx = document.getElementById('progressChart').getContext('2d');
+        const emptyMsg = document.getElementById('emptyMsg');
+        const chartWrapper = document.getElementById('chartWrapper');
+
+        if (!hasData) {
+            emptyMsg.style.display = 'block';
+            chartWrapper.style.opacity = '0';
+            return;
+        } else {
+            emptyMsg.style.display = 'none';
+            chartWrapper.style.opacity = '1';
+        }
+
+        // Якщо графік вже існує - видаляємо старий перед створенням нового
+        if (myChart) myChart.destroy();
+
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labelsArray,
+                datasets: [{
+                    label: `Оцінки: ${students[sIdx].lastName}`,
+                    data: gradesArray,
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.3, // Робить лінію плавною
+                    pointRadius: 6,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#3498db',
+                    spanGaps: true // З'єднує точки, навіть якщо між ними є пропуски
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        max: 12,
+                        ticks: { stepSize: 1 }
+                    }
+                },
+                plugins: {
+                    legend: { display: true, position: 'top' }
+                }
+            }
+        });
+    };
+
+    // Запускаємо перший раз при завантаженні
+    document.addEventListener('DOMContentLoaded', updateChart);
+</script>
+
+</body>
+</html>
