@@ -65,67 +65,97 @@
 </div>
 
 <script>
-    // Завантажуємо нову структуру даних
+    // 1. Завантажуємо дані
     let students = JSON.parse(localStorage.getItem('class_3b_students_v2')) || [];
     let allGrades = JSON.parse(localStorage.getItem('class_3b_grades_v2')) || {};
-
+    
     const headerRow = document.getElementById('headerRow');
     const journalBody = document.getElementById('journalBody');
     const subjectSelect = document.getElementById('subjectSelect');
-
+    const cols = 12; // Кількість колонок для оцінок
+    
+    // 2. Функція динамічного оновлення середнього балу
+    window.updateAverage = function(sIdx) {
+        const subject = subjectSelect.value;
+        let sum = 0;
+        let count = 0;
+    
+        // Шукаємо всі інпути оцінок саме для цього учня (sIdx)
+        const studentInputs = document.querySelectorAll(`.grade[data-student="${sIdx}"]`);
+        
+        studentInputs.forEach(input => {
+            const val = input.value.trim();
+            if (val && !isNaN(val)) {
+                sum += parseInt(val);
+                count++;
+            }
+        });
+    
+        const avgElement = document.getElementById(`avg-${sIdx}`);
+        if (avgElement) {
+            avgElement.innerText = count > 0 ? (sum / count).toFixed(1) : '-';
+        }
+    };
+    
     function initJournal() {
         const subject = subjectSelect.value;
-        const cols = 12; // Кількість колонок для оцінок
-
-        // 1. Оновлюємо шапку
-        headerRow.innerHTML = '<th>№</th><th>Прізвище та Ім\'я</th>';
+    
+        // 1. Оновлюємо шапку: №, Ім'я, потім цифри 1-12, в кінці Сер. бал
+        let headerHTML = '<th>№</th><th>Прізвище та Ім\'я</th>';
         for(let i=1; i<=cols; i++) {
-            headerRow.innerHTML += `<th>${i}</th>`;
+            headerHTML += `<th>${i}</th>`;
         }
-
+        headerHTML += '<th>Сер. бал</th>';
+        headerRow.innerHTML = headerHTML;
+    
         // 2. Рендеримо рядки
         journalBody.innerHTML = '';
         if(students.length === 0) {
-            journalBody.innerHTML = '<tr><td colspan="14" style="padding:20px; color:#999;">Список учнів порожній. Додайте їх у розділі "Список учнів".</td></tr>';
+            journalBody.innerHTML = `<tr><td colspan="${cols + 3}" style="padding:20px; color:#999;">Список учнів порожній.</td></tr>`;
             return;
         }
-
+    
         students.forEach((s, sIdx) => {
-            // Формуємо повне ім'я
             const fullName = `${s.lastName} ${s.firstName}`;
+            let sum = 0;
+            let count = 0;
             
             let row = `<tr>
                 <td>${sIdx + 1}</td>
                 <td class="student-name">${fullName}</td>`;
             
-            let sum = 0;
-            let count = 0;
-            
+            // Генеруємо комірки з оцінками
             for(let i=1; i<=cols; i++) {
                 const gradeKey = `${subject}_${sIdx}_${i}`;
                 const val = allGrades[gradeKey] || '';
+                
                 if (val && !isNaN(val)) { 
                     sum += parseInt(val); 
                     count++; 
                 }
-                row += `<td><input type="text" class="grade" oninput="updateAverage(${sIdx})" data-key="${gradeKey}" value="${val}" maxlength="2"></td>`;
+                // Додано data-student для легкого пошуку функцією updateAverage
+                row += `<td><input type="text" class="grade" 
+                            oninput="updateAverage(${sIdx})" 
+                            data-student="${sIdx}"
+                            data-key="${gradeKey}" 
+                            value="${val}" maxlength="2"></td>`;
             }
             
             const avg = count > 0 ? (sum / count).toFixed(1) : '-';
-            row += `<td id="avg-${sIdx}" style="font-weight:bold; color:#27ae60;">${avg}</td></tr>`;
+            row += `<td id="avg-${sIdx}" style="font-weight:bold; color:#27ae60; background:#f9fff9;">${avg}</td></tr>`;
             journalBody.innerHTML += row;
         });
     }
-
+    
     function saveGrades() {
         const inputs = document.querySelectorAll('.grade');
         inputs.forEach(input => {
             allGrades[input.dataset.key] = input.value;
         });
         localStorage.setItem('class_3b_grades_v2', JSON.stringify(allGrades));
-        alert('Оцінки успішно збережено у системі!');
+        alert('Оцінки успішно збережено!');
     }
-
+    
     subjectSelect.addEventListener('change', initJournal);
     initJournal();
 </script>
