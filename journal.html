@@ -3,44 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Електронний журнал</title>
+    <title>Журнал оцінок 3-Б</title>
     <style>
         :root { --primary: #34495e; --accent: #f1c40f; --bg: #f4f7f6; }
-        body { font-family: sans-serif; background: var(--bg); padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         
-        .controls { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; }
-        select, button { padding: 10px; border-radius: 5px; border: 1px solid #ddd; }
-        button { background: var(--primary); color: white; cursor: pointer; border: none; }
+        .header-box { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .controls { display: flex; gap: 15px; align-items: center; }
+        
+        select, button { padding: 10px 15px; border-radius: 6px; border: 1px solid #ddd; font-size: 0.9em; }
+        button { background: #2ecc71; color: white; cursor: pointer; border: none; font-weight: bold; }
+        button:hover { background: #27ae60; }
 
-        .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #e0e0e0; padding: 8px; text-align: center; }
-        th { background: #f8f9fa; color: #666; font-size: 0.85em; }
-        .student-name { text-align: left; min-width: 150px; font-weight: bold; }
+        .table-wrapper { overflow-x: auto; margin-top: 10px; border-radius: 8px; border: 1px solid #eee; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { border: 1px solid #eef0f2; padding: 10px; text-align: center; }
+        th { background: #f8f9fa; color: #7f8c8d; font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px; }
         
-        input.grade { width: 35px; border: none; text-align: center; font-weight: bold; color: #2c3e50; }
-        input.grade:focus { background: #fffde7; outline: 1px solid var(--accent); }
+        .student-name { text-align: left; min-width: 220px; color: var(--primary); font-size: 0.95em; }
+        .student-name span { color: #95a5a6; font-weight: normal; margin-right: 5px; }
         
-        .back-link { display: inline-block; margin-bottom: 15px; color: #7f8c8d; text-decoration: none; }
+        input.grade { width: 30px; border: 1px solid transparent; text-align: center; font-weight: bold; border-radius: 4px; transition: 0.2s; }
+        input.grade:focus { border-color: var(--accent); background: #fffde7; outline: none; }
+        
+        .back-link { text-decoration: none; color: #3498db; font-weight: 500; font-size: 0.9em; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <a href="index.html" class="back-link">← Назад до кабінету</a>
-    <h2>Електронний журнал 3-Б</h2>
-
-    <div class="controls">
-        <label>Предмет:</label>
-        <select id="subjectSelect">
-            <option value="math">Математика</option>
-            <option value="ukr">Українська мова</option>
-            <option value="reading">Читання</option>
-            <option value="eng">Англійська мова</option>
-            <option value="world">Я досліджую світ</option>
-        </select>
-        <button onclick="saveGrades()">Зберегти зміни</button>
+    <div class="header-box">
+        <div>
+            <a href="index.html" class="back-link">← Кабінет</a>
+            <h2 style="margin: 5px 0 0 0;">Журнал оцінок</h2>
+        </div>
+        <div class="controls">
+            <select id="subjectSelect">
+                <option value="math">Математика</option>
+                <option value="ukr">Українська мова</option>
+                <option value="reading">Читання</option>
+                <option value="eng">Англійська мова</option>
+                <option value="world">Я досліджую світ</option>
+            </select>
+            <button onclick="saveGrades()">Зберегти зміни</button>
+        </div>
     </div>
 
     <div class="table-wrapper">
@@ -48,39 +55,49 @@
             <thead>
                 <tr id="headerRow">
                     <th>№</th>
-                    <th>Учень</th>
+                    <th>Прізвище та Ім'я</th>
                     </tr>
             </thead>
-            <tbody id="journalBody">
-                </tbody>
+            <tbody id="journalBody"></tbody>
         </table>
     </div>
 </div>
 
 <script>
-    const subjects = ['math', 'ukr', 'reading', 'eng', 'world'];
-    let students = JSON.parse(localStorage.getItem('class_3b_students')) || [];
-    let allGrades = JSON.parse(localStorage.getItem('class_3b_grades')) || {};
+    // Завантажуємо нову структуру даних
+    let students = JSON.parse(localStorage.getItem('class_3b_students_v2')) || [];
+    let allGrades = JSON.parse(localStorage.getItem('class_3b_grades_v2')) || {};
 
     const headerRow = document.getElementById('headerRow');
     const journalBody = document.getElementById('journalBody');
     const subjectSelect = document.getElementById('subjectSelect');
 
-    // Створюємо 10 колонок для оцінок (як символічні дати уроків)
-    function initTable() {
+    function initJournal() {
         const subject = subjectSelect.value;
-        
-        // Очищення та створення заголовків
-        headerRow.innerHTML = '<th>№</th><th>Учень</th>';
-        for(let i=1; i<=10; i++) {
-            headerRow.innerHTML += `<th>Урок ${i}</th>`;
+        const cols = 12; // Кількість колонок для оцінок
+
+        // 1. Оновлюємо шапку
+        headerRow.innerHTML = '<th>№</th><th>Прізвище та Ім\'я</th>';
+        for(let i=1; i<=cols; i++) {
+            headerRow.innerHTML += `<th>${i}</th>`;
         }
 
-        // Рендер учнів
+        // 2. Рендеримо рядки
         journalBody.innerHTML = '';
-        students.forEach((name, sIdx) => {
-            let row = `<tr><td>${sIdx + 1}</td><td class="student-name">${name}</td>`;
-            for(let i=1; i<=10; i++) {
+        if(students.length === 0) {
+            journalBody.innerHTML = '<tr><td colspan="14" style="padding:20px; color:#999;">Список учнів порожній. Додайте їх у розділі "Список учнів".</td></tr>';
+            return;
+        }
+
+        students.forEach((s, sIdx) => {
+            // Формуємо повне ім'я
+            const fullName = `${s.lastName} ${s.firstName}`;
+            
+            let row = `<tr>
+                <td>${sIdx + 1}</td>
+                <td class="student-name">${fullName}</td>`;
+            
+            for(let i=1; i<=cols; i++) {
                 const gradeKey = `${subject}_${sIdx}_${i}`;
                 const val = allGrades[gradeKey] || '';
                 row += `<td><input type="text" class="grade" data-key="${gradeKey}" value="${val}" maxlength="2"></td>`;
@@ -95,12 +112,12 @@
         inputs.forEach(input => {
             allGrades[input.dataset.key] = input.value;
         });
-        localStorage.setItem('class_3b_grades', JSON.stringify(allGrades));
-        alert('Оцінки збережено!');
+        localStorage.setItem('class_3b_grades_v2', JSON.stringify(allGrades));
+        alert('Оцінки успішно збережено у системі!');
     }
 
-    subjectSelect.addEventListener('change', initTable);
-    initTable(); // Перший запуск
+    subjectSelect.addEventListener('change', initJournal);
+    initJournal();
 </script>
 
 </body>
