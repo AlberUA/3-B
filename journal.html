@@ -100,22 +100,23 @@
 </div>
 
 <script>
-    // 1. Завантажуємо дані з localStorage
+    // 1. Завантажуємо всі дані з localStorage
     let students = JSON.parse(localStorage.getItem('class_3b_students_v2')) || [];
     let allGrades = JSON.parse(localStorage.getItem('class_3b_grades_v2')) || {};
+    let allHomework = JSON.parse(localStorage.getItem('class_3b_hw_v2')) || {};
 
     const headerRow = document.getElementById('headerRow');
     const journalBody = document.getElementById('journalBody');
+    const hwBody = document.getElementById('hwBody');
     const subjectSelect = document.getElementById('subjectSelect');
     const cols = 12;
 
-    // 2. ЯВНО ВИЗНАЧАЄМО ФУНКЦІЮ ЯК ГЛОБАЛЬНУ
+    // 2. Глобальна функція оновлення середнього балу (працює миттєво при вводі)
     window.updateAverage = function(sIdx) {
         const subject = subjectSelect.value;
         let sum = 0;
         let count = 0;
 
-        // Знаходимо всі інпути саме для цього учня
         const studentInputs = document.querySelectorAll(`.grade[data-student="${sIdx}"]`);
         
         studentInputs.forEach(input => {
@@ -128,136 +129,100 @@
 
         const avgElement = document.getElementById(`avg-${sIdx}`);
         if (avgElement) {
-            avgElement.innerText = count > 0 ? (sum / count).toFixed(1) : '-';
-            
-            // Додатково: колір залежно від балу
-            const score = parseFloat(avgElement.innerText);
-            if (score >= 10) avgElement.style.color = "#27ae60"; // Зелений
-            else if (score <= 3) avgElement.style.color = "#e74c3c"; // Червоний
-            else avgElement.style.color = "#2c3e50"; // Звичайний
-        }
-    };
-
-    // 3. Функція ініціалізації таблиці
-    function initJournal() {
-        const subject = subjectSelect.value;
-
-        // Оновлюємо шапку (Сер. бал тепер завжди останній)
-        let headerHTML = '<th>№</th><th>Прізвище та Ім\'я</th>';
-        for(let i=1; i<=cols; i++) {
-            headerHTML += `<th>${i}</th>`;
-        }
-        headerHTML += '<th>Сер. бал</th>';
-        headerRow.innerHTML = headerHTML;
-
-        // Рендеримо рядки учнів
-        journalBody.innerHTML = '';
-        if(students.length === 0) {
-            journalBody.innerHTML = `<tr><td colspan="${cols + 3}" style="padding:20px; color:#999;">Список учнів порожній.</td></tr>`;
-            return;
-        }
-
-        students.forEach((s, sIdx) => {
-            const fullName = `${s.lastName} ${s.firstName}`;
-            let sum = 0;
-            let count = 0;
-            
-            let row = `<tr>
-                <td>${sIdx + 1}</td>
-                <td class="student-name">${fullName}</td>`;
-            
-            for(let i=1; i<=cols; i++) {
-                const gradeKey = `${subject}_${sIdx}_${i}`;
-                const val = allGrades[gradeKey] || '';
-                
-                if (val && !isNaN(val) && val !== "") { 
-                    sum += parseInt(val); 
-                    count++; 
-                }
-
-                // ВАЖЛИВО: додаємо data-student для зв'язку
-                row += `<td><input type="text" class="grade" 
-                            oninput="window.updateAverage(${sIdx})" 
-                            data-student="${sIdx}"
-                            data-key="${gradeKey}" 
-                            value="${val}" maxlength="2"></td>`;
-            }
-            
             const avg = count > 0 ? (sum / count).toFixed(1) : '-';
-            row += `<td id="avg-${sIdx}" style="font-weight:bold; color:#2c3e50; background:#f9f9f9;">${avg}</td></tr>`;
-            journalBody.innerHTML += row;
-        });
-    }
-
-    // 4. Функція збереження
-    window.saveGrades = function() {
-        const inputs = document.querySelectorAll('.grade');
-        inputs.forEach(input => {
-            allGrades[input.dataset.key] = input.value;
-        });
-        localStorage.setItem('class_3b_grades_v2', JSON.stringify(allGrades));
-        alert('Оцінки збережено!');
+            avgElement.innerText = avg;
+            
+            // Колірна індикація
+            const score = parseFloat(avg);
+            if (score >= 10) avgElement.style.color = "#27ae60"; 
+            else if (score <= 3) avgElement.style.color = "#e74c3c"; 
+            else avgElement.style.color = "#2c3e50"; 
+        }
     };
 
-    subjectSelect.addEventListener('change', initJournal);
-
-    // 5. Додаємо новий об'єкт для ДЗ
-    let allHomework = JSON.parse(localStorage.getItem('class_3b_hw_v2')) || {};
-    
-    // Оновлюємо функцію initJournal, щоб вона малювала і таблицю ДЗ
+    // 3. Головна функція ініціалізації (викликається при зміні предмета та завантаженні)
     function initJournal() {
         const subject = subjectSelect.value;
         const subjectText = subjectSelect.options[subjectSelect.selectedIndex].text;
-        document.getElementById('subjectNameDisplay').innerText = subjectText;
-    
-        // ... (тут ваш існуючий код рендеру таблиці оцінок) ...
-        // Викликаємо рендер таблиці ДЗ
+        
+        // Оновлюємо заголовок ДЗ
+        if(document.getElementById('subjectNameDisplay')) {
+            document.getElementById('subjectNameDisplay').innerText = subjectText;
+        }
+
+        // --- РЕНДЕР ТАБЛИЦІ ОЦІНОК ---
+        let headerHTML = '<th>№</th><th>Прізвище та Ім\'я</th>';
+        for(let i=1; i<=cols; i++) { headerHTML += `<th>${i}</th>`; }
+        headerHTML += '<th>Сер. бал</th>';
+        headerRow.innerHTML = headerHTML;
+
+        journalBody.innerHTML = '';
+        if(students.length === 0) {
+            journalBody.innerHTML = `<tr><td colspan="${cols + 3}" style="padding:20px; color:#999;">Список учнів порожній.</td></tr>`;
+        } else {
+            students.forEach((s, sIdx) => {
+                const fullName = `${s.lastName} ${s.firstName}`;
+                let sum = 0, count = 0;
+                let row = `<tr><td>${sIdx + 1}</td><td class="student-name">${fullName}</td>`;
+                
+                for(let i=1; i<=cols; i++) {
+                    const gradeKey = `${subject}_${sIdx}_${i}`;
+                    const val = allGrades[gradeKey] || '';
+                    if (val && !isNaN(val) && val !== "") { sum += parseInt(val); count++; }
+
+                    row += `<td><input type="text" class="grade" 
+                                oninput="window.updateAverage(${sIdx})" 
+                                data-student="${sIdx}" data-key="${gradeKey}" 
+                                value="${val}" maxlength="2"></td>`;
+                }
+                const avg = count > 0 ? (sum / count).toFixed(1) : '-';
+                row += `<td id="avg-${sIdx}" style="font-weight:bold; color:#2c3e50; background:#f9f9f9;">${avg}</td></tr>`;
+                journalBody.innerHTML += row;
+            });
+        }
+
+        // --- РЕНДЕР ТАБЛИЦІ ДОМАШНЬОГО ЗАВДАННЯ ---
         renderHomeworkTable(subject);
     }
-    
+
     function renderHomeworkTable(subject) {
-        const hwBody = document.getElementById('hwBody');
         hwBody.innerHTML = '';
-    
         for (let i = 1; i <= 12; i++) {
             const hwKey = `${subject}_hw_${i}`;
             const hwValue = allHomework[hwKey] || '';
-            
             hwBody.innerHTML += `
                 <tr>
                     <td style="font-weight:bold; background:#f8f9fa;">${i}</td>
                     <td>
-                        <input type="text" class="hw-input" 
-                               data-key="${hwKey}" 
-                               value="${hwValue}" 
+                        <input type="text" class="hw-input" data-key="${hwKey}" value="${hwValue}" 
                                placeholder="Наприклад: ст. 45, впр. 3..." 
-                               style="width:95%; padding:8px; border:1px solid transparent; border-radius:4px;">
+                               style="width:95%; padding:8px; border:1px solid #eee; border-radius:4px;">
                     </td>
-                </tr>
-            `;
+                </tr>`;
         }
     }
-    
-    // Функція збереження тепер охоплює і ДЗ
+
+    // 4. Універсальна функція збереження
     window.saveAllData = function() {
         // Зберігаємо оцінки
-        const gradeInputs = document.querySelectorAll('.grade');
-        gradeInputs.forEach(input => {
+        document.querySelectorAll('.grade').forEach(input => {
             allGrades[input.dataset.key] = input.value;
         });
         localStorage.setItem('class_3b_grades_v2', JSON.stringify(allGrades));
-    
+
         // Зберігаємо ДЗ
-        const hwInputs = document.querySelectorAll('.hw-input');
-        hwInputs.forEach(input => {
+        document.querySelectorAll('.hw-input').forEach(input => {
             allHomework[input.dataset.key] = input.value;
         });
         localStorage.setItem('class_3b_hw_v2', JSON.stringify(allHomework));
-    
-        alert('Дані успішно збережено: оцінки та домашні завдання оновлено!');
+
+        alert('Дані успішно збережено: оцінки та ДЗ оновлено!');
     };
-    
-    // Запуск при завантаженні
+
+    // Слухач зміни предмета
+    subjectSelect.addEventListener('change', initJournal);
+
+    // Запуск при завантаженні сторінки
     document.addEventListener('DOMContentLoaded', initJournal);
 </script>
 
