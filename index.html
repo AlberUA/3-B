@@ -3,29 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Кабінет вчителя</title>
+    <title>Панель вчителя 3-Б</title>
     <style>
-        :root { --primary: #34495e; --accent: #3498db; --bg: #f4f7f6; }
-        body { font-family: sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .menu-container { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; }
-        h1 { color: var(--primary); margin-bottom: 30px; }
-        .nav-buttons { display: grid; gap: 20px; }
-        .btn { padding: 15px 30px; font-size: 1.1em; border: none; border-radius: 8px; cursor: pointer; text-decoration: none; color: white; transition: 0.3s; }
-        .btn-schedule { background: var(--accent); }
-        .btn-students { background: #2ecc71; }
-        .btn:hover { opacity: 0.9; transform: scale(1.02); }
+        :root {
+            --bg: #f0f2f5;
+            --card-bg: #ffffff;
+            --text: #2c3e50;
+            --schedule: #3498db;
+            --students: #2ecc71;
+            --journal: #f1c40f;
+            --analytics: #9b59b6;
+            --reports: #3f51b5;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .dashboard {
+            width: 90%;
+            max-width: 1000px;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            color: #34495e;
+            letter-spacing: -1px;
+        }
+
+        /* СІТКА КНОПОК */
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .nav-card {
+            background: var(--card-bg);
+            padding: 30px 20px;
+            border-radius: 16px;
+            text-align: center;
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1em;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: none;
+        }
+
+        .nav-card i {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .nav-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+            filter: brightness(1.1);
+        }
+
+        /* Стилі для конкретних кнопок */
+        .btn-schedule { background-color: var(--schedule); }
+        .btn-students { background-color: var(--students); }
+        .btn-journal { background-color: var(--journal); color: #000; }
+        .btn-analytics { background-color: var(--analytics); }
+        .btn-reports { background-color: var(--reports); }
+
+        /* БЛОК СТАТУСУ */
+        #status-box {
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            border-left: 8px solid var(--analytics);
+        }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        #today-date { font-weight: 800; color: #34495e; margin: 0; }
+        .bday-tag { color: #e67e22; font-weight: bold; display: flex; align-items: center; gap: 8px; }
+
+        @media (max-width: 600px) {
+            .nav-grid { grid-template-columns: 1fr 1fr; }
+            header h1 { font-size: 1.8em; }
+        }
     </style>
 </head>
 <body>
-    <div class="menu-container">
-        <h1>Кабінет вчителя 3-Б</h1>
-        <div class="nav-buttons">
-            <a href="schedule.html" class="btn btn-schedule">📅 Розклад занять</a>
-            <a href="students.html" class="btn btn-students">👥 Список учнів</a>
-            <a href="journal.html" class="btn" style="background: #f1c40f; color: #000;">📓 Електронний журнал</a>
-            <a href="analytics.html" class="btn" style="background: #9b59b6;">📊 Аналітика</a>
-            <a href="reports.html" class="btn btn-reports" style="background: #3f51b5; color: #fff;">📈 Звіти та Прогрес</a>
+
+<div class="dashboard">
+    <header>
+        <h1>Мій Кабінет 3-Б</h1>
+    </header>
+
+    <nav class="nav-grid">
+        <a href="schedule.html" class="nav-card btn-schedule">
+            <span>📅</span> Розклад
+        </a>
+        <a href="students.html" class="nav-card btn-students">
+            <span>👥</span> Учні
+        </a>
+        <a href="journal.html" class="nav-card btn-journal">
+            <span>📓</span> Журнал
+        </a>
+        <a href="analytics.html" class="nav-card btn-analytics">
+            <span>📊</span> Аналітика
+        </a>
+        <a href="reports.html" class="nav-card btn-reports">
+            <span>📈</span> Прогрес
+        </a>
+    </nav>
+
+    <div id="status-box">
+        <div class="status-header">
+            <h3 id="today-date">Завантаження дати...</h3>
+            <div id="birthday-tag" class="bday-tag"></div>
         </div>
+        <p id="class-summary" style="color: #7f8c8d; margin: 0;"></p>
     </div>
+</div>
+
+<script>
+    // Логіка оновлення даних
+    function updateDashboard() {
+        const students = JSON.parse(localStorage.getItem('class_3b_students_v2')) || [];
+        const now = new Date();
+        
+        // 1. Дата
+        const options = { weekday: 'long', month: 'long', day: 'numeric' };
+        document.getElementById('today-date').innerText = now.toLocaleDateString('uk-UA', options);
+
+        // 2. Статистика
+        const boys = students.filter(s => s.gender === 'Хлопчик').length;
+        const girls = students.filter(s => s.gender === 'Дівчинка').length;
+        document.getElementById('class-summary').innerText = 
+            `Сьогодні навчається ${students.length} учнів (${boys} хлопчиків та ${girls} дівчаток).`;
+
+        // 3. Іменинники (порівнюємо ММ-ДД)
+        const currentMonthDay = now.toISOString().slice(5, 10);
+        const bdayStudent = students.find(s => s.birthDate && s.birthDate.slice(5, 10) === currentMonthDay);
+
+        const bdayTag = document.getElementById('birthday-tag');
+        if (bdayStudent) {
+            bdayTag.innerHTML = `🎂 Світле свято у <strong>${bdayStudent.firstName}</strong>!`;
+        } else {
+            bdayTag.innerText = "🎈 Сьогодні без святкувань";
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', updateDashboard);
+</script>
+
 </body>
 </html>
