@@ -165,5 +165,21 @@
     </div>
 </div>
 
+    <script>
+    const days = ['Неділя', 'Понеділок', 'Вівторок', 'Середа', 'Четвер', 'П’ятниця', 'Субота'];
+    const todayIndex = new Date().getDay(); // 0 - Нд, 1 - Пн...
+    const todayName = days[todayIndex];
+
+    document.querySelectorAll('.day-card').forEach(card => {
+        const header = card.querySelector('.day-header').innerText;
+        if (header === todayName) {
+            card.style.border = "3px solid #ffcc00";
+            card.style.transform = "scale(1.05)";
+            card.style.boxShadow = "0 10px 20px rgba(0,0,0,0.2)";
+            card.querySelector('.day-header').innerText += " (СЬОГОДНІ)";
+        }
+        // Підсвічування вихідних (Субота та Неділя зазвичай не в сітці, але можна засірити все інше)
+    });
+</script>
 </body>
 </html>
