@@ -5,14 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Список учнів з деталями</title>
     <style>
-        :root { --primary: #2ecc71; --bg: #f4f7f6; --dark: #34495e; }
+        :root { --primary: #2ecc71; --bg: #f4f7f6; --dark: #34495e; --blue: #3498db; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: var(--dark); }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+        .container { max-width: 950px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
         
         .back-link { display: inline-block; margin-bottom: 20px; color: #7f8c8d; text-decoration: none; font-weight: 500; }
         h2 { margin-top: 0; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
 
-        /* Стилі форми */
         .form-grid { 
             display: grid; 
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
@@ -29,21 +28,31 @@
         button#addBtn { 
             grid-column: 1 / -1; 
             background: var(--primary); 
-            color: white; 
-            border: none; 
-            padding: 12px; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-weight: bold;
-            transition: 0.2s;
+            color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s;
         }
         button#addBtn:hover { background: #27ae60; }
 
-        /* Таблиця */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
         th { background: #fcfcfc; color: #95a5a6; font-size: 0.8em; text-transform: uppercase; }
-        .delete-btn { color: #e74c3c; cursor: pointer; border: none; background: none; font-size: 1.2em; }
+
+        /* Стилі для кнопок дій */
+        .btn-action {
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .edit-btn { background: var(--blue); color: white; margin-right: 5px; }
+        .edit-btn:hover { background: #2980b9; transform: translateY(-1px); }
+        
+        .delete-btn { background: #fff1f0; color: #e74c3c; border: 1px solid #ffa39e; }
+        .delete-btn:hover { background: #e74c3c; color: white; }
         
         .gender-icon { font-size: 1.1em; margin-right: 5px; }
     </style>
@@ -85,7 +94,7 @@
                 <th>Стать</th>
                 <th>Дата нар.</th>
                 <th>Вік</th>
-                <th>Дія</th>
+                <th style="text-align: right;">Дії</th>
             </tr>
         </thead>
         <tbody id="studentList"></tbody>
@@ -93,52 +102,45 @@
 </div>
 
 <div id="editModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
-    <div style="background:white; padding:30px; border-radius:12px; width:400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
-        <h3 style="margin-top:0;">📝 Редагувати дані учня</h3>
+    <div style="background:white; padding:30px; border-radius:12px; width:380px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+        <h3 style="margin-top:0;">✏️ Редагувати учня</h3>
         <input type="hidden" id="editIndex">
-        <div style="margin-bottom:15px;">
-            <label>Прізвище:</label>
-            <input type="text" id="editLastName" style="width:100%; padding:8px; margin-top:5px;">
+        <div style="margin-bottom:12px;">
+            <label>Прізвище</label>
+            <input type="text" id="editLastName" style="width:100%; box-sizing: border-box;">
         </div>
-        <div style="margin-bottom:15px;">
-            <label>Ім'я:</label>
-            <input type="text" id="editFirstName" style="width:100%; padding:8px; margin-top:5px;">
+        <div style="margin-bottom:12px;">
+            <label>Ім'я</label>
+            <input type="text" id="editFirstName" style="width:100%; box-sizing: border-box;">
         </div>
-        <div style="margin-bottom:15px;">
-            <label>Дата народження:</label>
-            <input type="date" id="editBirthDate" style="width:100%; padding:8px; margin-top:5px;">
+        <div style="margin-bottom:12px;">
+            <label>Дата народження</label>
+            <input type="date" id="editBirthDate" style="width:100%; box-sizing: border-box;">
         </div>
-        <div style="margin-bottom:15px;">
-            <label>Стать:</label>
-            <select id="editGender" style="width:100%; padding:8px; margin-top:5px;">
+        <div style="margin-bottom:20px;">
+            <label>Стать</label>
+            <select id="editGender" style="width:100%; box-sizing: border-box;">
                 <option value="Хлопчик">Хлопчик</option>
                 <option value="Дівчинка">Дівчинка</option>
             </select>
         </div>
         <div style="display:flex; gap:10px; justify-content:flex-end;">
-            <button onclick="closeEditModal()" style="background:#95a5a6; border:none; padding:10px 15px; color:white; border-radius:5px; cursor:pointer;">Скасувати</button>
-            <button onclick="saveStudentEdit()" style="background:#3498db; border:none; padding:10px 15px; color:white; border-radius:5px; cursor:pointer;">Зберегти зміни</button>
+            <button onclick="closeEditModal()" style="background:#bdc3c7; border:none; padding:10px 15px; border-radius:6px; cursor:pointer;">Скасувати</button>
+            <button onclick="saveStudentEdit()" style="background:var(--blue); border:none; padding:10px 15px; color:white; border-radius:6px; cursor:pointer;">Зберегти</button>
         </div>
     </div>
 </div>
 
 <script>
-    const addBtn = document.getElementById('addBtn');
     const list = document.getElementById('studentList');
-    
     let students = JSON.parse(localStorage.getItem('class_3b_students_v2')) || [];
     
-    // Функція розрахунку віку (повертає точну кількість років)
     function calculateAge(birthday) {
         const birthDate = new Date(birthday);
         const today = new Date();
         let age = today.getFullYear() - birthDate.getFullYear();
         const m = today.getMonth() - birthDate.getMonth();
-        
-        // Коригування, якщо день народження ще не настав у цьому році
-        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-            age--;
-        }
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
         return age;
     }
     
@@ -155,98 +157,71 @@
                 <td><span class="gender-icon">${genderSymbol}</span> ${s.gender}</td>
                 <td>${s.birthDate}</td>
                 <td>${age} р.</td>
-                <td><button class="delete-btn" onclick="deleteStudent(${index})">&times;</button></td>
+                <td style="text-align: right;">
+                    <button class="btn-action edit-btn" onclick="openEditModal(${index})">✏️ Ред.</button>
+                    <button class="btn-action delete-btn" onclick="deleteStudent(${index})">🗑️</button>
+                </td>
             `;
             list.appendChild(tr);
         });
         localStorage.setItem('class_3b_students_v2', JSON.stringify(students));
     }
     
-    addBtn.addEventListener('click', () => {
+    document.getElementById('addBtn').addEventListener('click', () => {
         const fName = document.getElementById('firstName').value.trim();
         const lName = document.getElementById('lastName').value.trim();
         const gender = document.getElementById('gender').value;
         const bDate = document.getElementById('birthDate').value;
-    
+
         if (fName && lName && bDate) {
             const currentAge = calculateAge(bDate);
-    
-            // ПЕРЕВІРКА ВІКУ
-            if (currentAge < 9) {
-                alert(`Помилка: Учень надто молодий (${currentAge} р.). Для 3-го класу вік має бути не менше 9 років.`);
-                return; // Перериваємо виконання функції
-            } else if (currentAge > 11) {
-                alert(`Помилка: Учень надто дорослий (${currentAge} р.). Для 3-го класу вік має бути не більше 11 років.`);
-                return; // Перериваємо виконання функції
+            if (currentAge < 8 || currentAge > 12) {
+                alert(`Перевірте дату народження. Вік (${currentAge} р.) не відповідає 3-му класу.`);
+                return;
             }
-    
-            const newStudent = {
-                firstName: fName,
-                lastName: lName,
-                gender: gender,
-                birthDate: bDate
-            };
-    
-            students.push(newStudent);
-            
-            // Очищення полів
+
+            students.push({ firstName: fName, lastName: lName, gender: gender, birthDate: bDate });
             document.getElementById('firstName').value = '';
             document.getElementById('lastName').value = '';
             document.getElementById('birthDate').value = '';
-            
             renderStudents();
         } else {
             alert('Будь ласка, заповніть усі поля');
         }
     });
-    
+
     window.deleteStudent = (index) => {
-        if(confirm('Видалити учня зі списку?')) {
+        if(confirm('Видалити учня?')) {
             students.splice(index, 1);
             renderStudents();
         }
     };
-    
-    renderStudents();
 
-    // Відкрити вікно з даними учня
     window.openEditModal = function(index) {
-        const student = students[index];
+        const s = students[index];
         document.getElementById('editIndex').value = index;
-        document.getElementById('editLastName').value = student.lastName;
-        document.getElementById('editFirstName').value = student.firstName;
-        document.getElementById('editBirthDate').value = student.birthDate;
-        document.getElementById('editGender').value = student.gender;
-        
+        document.getElementById('editLastName').value = s.lastName;
+        document.getElementById('editFirstName').value = s.firstName;
+        document.getElementById('editBirthDate').value = s.birthDate;
+        document.getElementById('editGender').value = s.gender;
         document.getElementById('editModal').style.display = 'flex';
     };
-    
-    // Закрити вікно
-    window.closeEditModal = function() {
-        document.getElementById('editModal').style.display = 'none';
-    };
-    
-    // Зберегти оновлені дані
+
+    window.closeEditModal = () => document.getElementById('editModal').style.display = 'none';
+
     window.saveStudentEdit = function() {
         const index = document.getElementById('editIndex').value;
-        
-        // Оновлюємо об'єкт у масиві
         students[index] = {
             lastName: document.getElementById('editLastName').value,
             firstName: document.getElementById('editFirstName').value,
             birthDate: document.getElementById('editBirthDate').value,
             gender: document.getElementById('editGender').value
         };
-    
-        // Зберігаємо в localStorage
-        localStorage.setItem('class_3b_students_v2', JSON.stringify(students));
-        
-        // Оновлюємо таблицю на сторінці та закриваємо вікно
         renderStudents(); 
         closeEditModal();
-        alert('Дані учня успішно оновлено!');
     };
-</script>
 
+    renderStudents();
+</script>
 </body>
 </html>
