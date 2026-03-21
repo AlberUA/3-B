@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Список учнів</title>
+    <style>
+        :root { --primary: #2ecc71; --bg: #f9f9f9; }
+        body { font-family: sans-serif; background: var(--bg); padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .back-link { display: inline-block; margin-bottom: 20px; color: #7f8c8d; text-decoration: none; }
+        
+        .form-group { display: flex; gap: 10px; margin-bottom: 30px; }
+        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; outline: none; }
+        button#addBtn { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
+        th { color: #7f8c8d; font-size: 0.9em; text-transform: uppercase; }
+        .delete-btn { color: #e74c3c; cursor: pointer; border: none; background: none; font-size: 1.2em; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="index.html" class="back-link">← Назад до кабінету</a>
+    <h2>Список учнів класу</h2>
+
+    <div class="form-group">
+        <input type="text" id="studentName" placeholder="Прізвище та ім'я учня">
+        <button id="addBtn">Додати</button>
+    </div>
+
+    <table id="studentsTable">
+        <thead>
+            <tr>
+                <th>№</th>
+                <th>ПІБ Учня</th>
+                <th>Дія</th>
+            </tr>
+        </thead>
+        <tbody id="studentList">
+            </tbody>
+    </table>
+</div>
+
+<script>
+    const addBtn = document.getElementById('addBtn');
+    const input = document.getElementById('studentName');
+    const list = document.getElementById('studentList');
+
+    // Завантаження даних
+    let students = JSON.parse(localStorage.getItem('class_3b_students')) || [];
+
+    function renderStudents() {
+        list.innerHTML = '';
+        students.forEach((name, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${name}</td>
+                <td><button class="delete-btn" onclick="deleteStudent(${index})">&times;</button></td>
+            `;
+            list.appendChild(tr);
+        });
+        localStorage.setItem('class_3b_students', JSON.stringify(students));
+    }
+
+    addBtn.addEventListener('click', () => {
+        if (input.value.trim()) {
+            students.push(input.value.trim());
+            input.value = '';
+            renderStudents();
+        }
+    });
+
+    window.deleteStudent = (index) => {
+        students.splice(index, 1);
+        renderStudents();
+    };
+
+    // Перший рендер
+    renderStudents();
+</script>
+
+</body>
+</html>
