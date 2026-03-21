@@ -1,19 +1,146 @@
-<div class="analytics-container">
-    <h2>📊 Аналітика класу 3-Б</h2>
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Аналітика класу 3-Б</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --primary: #9b59b6; --bg: #f4f7f6; --dark: #2c3e50; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: var(--dark); }
+        .container { max-width: 1000px; margin: 0 auto; }
+        
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 20px; margin-bottom: 30px; 
+        }
+        
+        .card { 
+            background: white; padding: 20px; border-radius: 12px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center;
+        }
+        
+        .card h3 { margin: 0; font-size: 0.9em; color: #7f8c8d; text-transform: uppercase; }
+        .card p { margin: 10px 0 0; font-size: 1.8em; font-weight: bold; color: var(--primary); }
+
+        .charts-container { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); 
+            gap: 25px; 
+        }
+        
+        .chart-box { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .chart-box h4 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        
+        .back-link { display: inline-block; margin-bottom: 20px; color: #3498db; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="index.html" class="back-link">← Назад до кабінету</a>
+    <h1>📊 Аналітика та прогрес класу</h1>
+
     <div class="stats-grid">
-        <div class="stat-card">
-            <h3>Учнів у класі</h3>
-            <p id="totalStudents">0</p>
+        <div class="card">
+            <h3>Усього учнів</h3>
+            <p id="totalCount">0</p>
         </div>
-        <div class="stat-card">
-            <h3>Гендерний склад</h3>
-            <p id="genderRatio"> хлопчиків / дівчаток</p>
+        <div class="card">
+            <h3>Сер. бал класу</h3>
+            <p id="classAvg">0.0</p>
         </div>
-        <div class="stat-card">
-            <h3>Середній вік</h3>
-            <p id="avgAge">0 років</p>
+        <div class="card">
+            <h3>Іменинники місяця</h3>
+            <p id="bdayCount">0</p>
         </div>
     </div>
-    <div class="birthday-alert" id="birthdayAlert">
+
+    <div class="charts-container">
+        <div class="chart-box">
+            <h4>Середній бал за предметами</h4>
+            <canvas id="subjectsChart"></canvas>
         </div>
+
+        <div class="chart-box">
+            <h4>Склад класу</h4>
+            <canvas id="genderChart"></canvas>
+        </div>
+    </div>
 </div>
+
+<script>
+    // 1. Отримуємо дані
+    const students = JSON.parse(localStorage.getItem('class_3b_students_v2')) || [];
+    const allGrades = JSON.parse(localStorage.getItem('class_3b_grades_v2')) || {};
+
+    // 2. Рахуємо загальні показники
+    document.getElementById('totalCount').innerText = students.length;
+
+    // Рахуємо іменинників цього місяця
+    const currentMonth = new Date().getMonth();
+    const bdays = students.filter(s => new Date(s.birthDate).getMonth() === currentMonth).length;
+    document.getElementById('bdayCount').innerText = bdays;
+
+    // 3. Логіка для графіка предметів
+    const subjects = {
+        math: "Математика",
+        ukr: "Укр. мова",
+        reading: "Читання",
+        eng: "Англійська",
+        world: "ЯДС"
+    };
+
+    const avgData = Object.keys(subjects).map(subKey => {
+        let sum = 0;
+        let count = 0;
+        // Проходимо по всіх оцінках цього предмету для всіх учнів
+        Object.keys(allGrades).forEach(key => {
+            if(key.startsWith(subKey) && allGrades[key] !== "") {
+                sum += parseInt(allGrades[key]);
+                count++;
+            }
+        });
+        return count > 0 ? (sum / count).toFixed(1) : 0;
+    });
+
+    // Вивід загального середнього балу класу
+    const totalAvg = (avgData.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / avgData.length).toFixed(1);
+    document.getElementById('classAvg').innerText = totalAvg;
+
+    // 4. Малюємо графіки
+    const ctxSubjects = document.getElementById('subjectsChart').getContext('2d');
+    new Chart(ctxSubjects, {
+        type: 'bar',
+        data: {
+            labels: Object.values(subjects),
+            datasets: [{
+                label: 'Середній бал',
+                data: avgData,
+                backgroundColor: 'rgba(155, 89, 182, 0.6)',
+                borderColor: 'rgba(155, 89, 182, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: { scales: { y: { beginAtZero: true, max: 12 } } }
+    });
+
+    const ctxGender = document.getElementById('genderChart').getContext('2d');
+    const boys = students.filter(s => s.gender === 'Хлопчик').length;
+    const girls = students.filter(s => s.gender === 'Дівчинка').length;
+
+    new Chart(ctxGender, {
+        type: 'doughnut',
+        data: {
+            labels: ['Хлопчики', 'Дівчатка'],
+            datasets: [{
+                data: [boys, girls],
+                backgroundColor: ['#3498db', '#e74c3c']
+            }]
+        }
+    });
+</script>
+
+</body>
+</html>
