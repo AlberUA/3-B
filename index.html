@@ -3,167 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Розклад 3 класу (Полегшений)</title>
+    <title>Кабінет вчителя</title>
     <style>
-        :root {
-            --main-blue: #34495e;
-            --soft-blue: #ebf2fa;
-            --accent: #e67e22;
-            --bg: #fdfdfd;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--soft-blue);
-            padding: 40px 20px;
-            margin: 0;
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        h1 {
-            color: var(--main-blue);
-            font-weight: 800;
-            letter-spacing: -1px;
-            margin-bottom: 5px;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-        }
-
-        .day {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border-top: 5px solid var(--main-blue);
-            transition: all 0.3s ease;
-        }
-
-        .day:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-
-        .day-title {
-            padding: 15px;
-            text-align: center;
-            font-weight: bold;
-            background: #fafafa;
-            border-bottom: 1px solid #eee;
-            color: var(--main-blue);
-        }
-
-        .list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .item {
-            padding: 12px 15px;
-            border-bottom: 1px solid #f5f5f5;
-            display: flex;
-            align-items: center;
-            font-size: 0.95em;
-        }
-
-        .item:last-child { border-bottom: none; }
-
-        .idx {
-            width: 24px;
-            height: 24px;
-            background: var(--soft-blue);
-            color: var(--main-blue);
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 12px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-
-        @media (max-width: 768px) {
-            .grid { grid-template-columns: 1fr; }
-        }
+        :root { --primary: #34495e; --accent: #3498db; --bg: #f4f7f6; }
+        body { font-family: sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .menu-container { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; }
+        h1 { color: var(--primary); margin-bottom: 30px; }
+        .nav-buttons { display: grid; gap: 20px; }
+        .btn { padding: 15px 30px; font-size: 1.1em; border: none; border-radius: 8px; cursor: pointer; text-decoration: none; color: white; transition: 0.3s; }
+        .btn-schedule { background: var(--accent); }
+        .btn-students { background: #2ecc71; }
+        .btn:hover { opacity: 0.9; transform: scale(1.02); }
     </style>
 </head>
 <body>
-
-<div class="container">
-    <header>
-        <h1>Мій Розклад</h1>
-        <p>3-й клас • П'ятиденка (max 5 уроків)</p>
-    </header>
-
-    <div class="grid">
-        <div class="day">
-            <div class="day-title">Понеділок</div>
-            <div class="list">
-                <div class="item"><span class="idx">1</span> Українська мова</div>
-                <div class="item"><span class="idx">2</span> Математика</div>
-                <div class="item"><span class="idx">3</span> Англійська мова</div>
-                <div class="item"><span class="idx">4</span> Читання</div>
-                <div class="item"><span class="idx">5</span> Фізкультура</div>
-            </div>
-        </div>
-
-        <div class="day">
-            <div class="day-title">Вівторок</div>
-            <div class="list">
-                <div class="item"><span class="idx">1</span> Математика</div>
-                <div class="item"><span class="idx">2</span> Читання</div>
-                <div class="item"><span class="idx">3</span> Я досліджую світ</div>
-                <div class="item"><span class="idx">4</span> Українська мова</div>
-                <div class="item"><span class="idx">5</span> Фізкультура</div>
-            </div>
-        </div>
-
-        <div class="day">
-            <div class="day-title">Середа</div>
-            <div class="list">
-                <div class="item"><span class="idx">1</span> Читання</div>
-                <div class="item"><span class="idx">2</span> Математика</div>
-                <div class="item"><span class="idx">3</span> Англійська мова</div>
-                <div class="item"><span class="idx">4</span> Я досліджую світ</div>
-                <div class="item"><span class="idx">5</span> Мистецтво</div>
-            </div>
-        </div>
-
-        <div class="day">
-            <div class="day-title">Четвер</div>
-            <div class="list">
-                <div class="item"><span class="idx">1</span> Математика</div>
-                <div class="item"><span class="idx">2</span> Українська мова</div>
-                <div class="item"><span class="idx">3</span> Я досліджую світ</div>
-                <div class="item"><span class="idx">4</span> Англійська мова</div>
-                <div class="item"><span class="idx">5</span> Інформатика</div>
-            </div>
-        </div>
-
-        <div class="day">
-            <div class="day-title">П'ятниця</div>
-            <div class="list">
-                <div class="item"><span class="idx">1</span> Українська мова</div>
-                <div class="item"><span class="idx">2</span> Математика</div>
-                <div class="item"><span class="idx">3</span> Читання</div>
-                <div class="item"><span class="idx">4</span> Мистецтво</div>
-            </div>
+    <div class="menu-container">
+        <h1>Кабінет вчителя 3-Б</h1>
+        <div class="nav-buttons">
+            <a href="schedule.html" class="btn btn-schedule">📅 Розклад занять</a>
+            <a href="students.html" class="btn btn-students">👥 Список учнів</a>
         </div>
     </div>
-</div>
-
 </body>
 </html>
