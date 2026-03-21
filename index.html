@@ -3,174 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Розклад 3-го класу | Інтелект України</title>
+    <title>Розклад 3 класу (Полегшений)</title>
     <style>
         :root {
-            --primary-color: #4a90e2;
-            --accent-color: #ffcc00;
-            --bg-color: #f4f7f6;
-            --text-color: #333;
+            --main-blue: #34495e;
+            --soft-blue: #ebf2fa;
+            --accent: #e67e22;
+            --bg: #fdfdfd;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--soft-blue);
+            padding: 40px 20px;
             margin: 0;
-            padding: 20px;
+            line-height: 1.6;
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
         }
 
         h1 {
-            text-align: center;
-            color: var(--primary-color);
-            border-bottom: 3px solid var(--accent-color);
-            padding-bottom: 10px;
+            color: var(--main-blue);
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 5px;
         }
 
-        .schedule-grid {
+        .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
         }
 
-        .day-card {
-            background: #fff;
-            border: 1px solid #e1e1e1;
-            border-radius: 10px;
-            overflow: hidden;
-            transition: transform 0.3s ease;
+        .day {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-top: 5px solid var(--main-blue);
+            transition: all 0.3s ease;
         }
 
-        .day-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        .day:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
 
-        .day-header {
-            background: var(--primary-color);
-            color: white;
-            padding: 10px;
+        .day-title {
+            padding: 15px;
             text-align: center;
             font-weight: bold;
-            text-transform: uppercase;
-            font-size: 0.9em;
+            background: #fafafa;
+            border-bottom: 1px solid #eee;
+            color: var(--main-blue);
         }
 
-        .lessons-list {
+        .list {
             list-style: none;
             padding: 0;
             margin: 0;
         }
 
-        .lesson-item {
+        .item {
             padding: 12px 15px;
-            border-bottom: 1px inset #f9f9f9;
-            font-size: 0.85em;
+            border-bottom: 1px solid #f5f5f5;
             display: flex;
             align-items: center;
+            font-size: 0.95em;
         }
 
-        .lesson-item:last-child { border-bottom: none; }
+        .item:last-child { border-bottom: none; }
 
-        .num {
-            background: var(--accent-color);
-            color: #000;
-            width: 22px;
-            height: 22px;
-            display: inline-flex;
+        .idx {
+            width: 24px;
+            height: 24px;
+            background: var(--soft-blue);
+            color: var(--main-blue);
+            border-radius: 6px;
+            display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 50%;
-            margin-right: 10px;
-            font-weight: bold;
+            margin-right: 12px;
             font-size: 0.8em;
-            flex-shrink: 0;
+            font-weight: bold;
         }
 
-        .special {
-            background-color: #fffde7;
-            font-weight: 600;
-        }
-
-        @media (max-width: 600px) {
-            .schedule-grid { grid-template-columns: 1fr; }
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>📅 Розклад уроків: 3-Б клас</h1>
-    <p style="text-align: center; color: #777;">Проєкт «Інтелект України»</p>
+    <header>
+        <h1>Мій Розклад</h1>
+        <p>3-й клас • П'ятиденка (max 5 уроків)</p>
+    </header>
 
-    <div class="schedule-grid">
-        <div class="day-card">
-            <div class="day-header">Понеділок</div>
-            <ul class="lessons-list">
-                <li class="lesson-item"><span class="num">1</span> Укр. мова</li>
-                <li class="lesson-item"><span class="num">2</span> Математика</li>
-                <li class="lesson-item"><span class="num">3</span> Англійська</li>
-                <li class="lesson-item"><span class="num">4</span> Читання</li>
-                <li class="lesson-item special"><span class="num">5</span> Навчаємось разом</li>
-                <li class="lesson-item"><span class="num">6</span> Фізкультура</li>
-            </ul>
+    <div class="grid">
+        <div class="day">
+            <div class="day-title">Понеділок</div>
+            <div class="list">
+                <div class="item"><span class="idx">1</span> Українська мова</div>
+                <div class="item"><span class="idx">2</span> Математика</div>
+                <div class="item"><span class="idx">3</span> Англійська мова</div>
+                <div class="item"><span class="idx">4</span> Читання</div>
+                <div class="item"><span class="idx">5</span> Фізкультура</div>
+            </div>
         </div>
 
-        <div class="day-card">
-            <div class="day-header">Вівторок</div>
-            <ul class="lessons-list">
-                <li class="lesson-item"><span class="num">1</span> Математика</li>
-                <li class="lesson-item"><span class="num">2</span> Читання</li>
-                <li class="lesson-item"><span class="num">3</span> Я досліджую світ</li>
-                <li class="lesson-item"><span class="num">4</span> Укр. мова</li>
-                <li class="lesson-item"><span class="num">5</span> Фізкультура</li>
-                <li class="lesson-item"><span class="num">6</span> Інформатика</li>
-            </ul>
+        <div class="day">
+            <div class="day-title">Вівторок</div>
+            <div class="list">
+                <div class="item"><span class="idx">1</span> Математика</div>
+                <div class="item"><span class="idx">2</span> Читання</div>
+                <div class="item"><span class="idx">3</span> Я досліджую світ</div>
+                <div class="item"><span class="idx">4</span> Українська мова</div>
+                <div class="item"><span class="idx">5</span> Фізкультура</div>
+            </div>
         </div>
 
-        <div class="day-card">
-            <div class="day-header">Середа</div>
-            <ul class="lessons-list">
-                <li class="lesson-item"><span class="num">1</span> Читання</li>
-                <li class="lesson-item"><span class="num">2</span> Математика</li>
-                <li class="lesson-item"><span class="num">3</span> Англійська</li>
-                <li class="lesson-item"><span class="num">4</span> Я досліджую світ</li>
-                <li class="lesson-item"><span class="num">5</span> Дизайн і техн.</li>
-                <li class="lesson-item"><span class="num">6</span> Мистецтво</li>
-            </ul>
+        <div class="day">
+            <div class="day-title">Середа</div>
+            <div class="list">
+                <div class="item"><span class="idx">1</span> Читання</div>
+                <div class="item"><span class="idx">2</span> Математика</div>
+                <div class="item"><span class="idx">3</span> Англійська мова</div>
+                <div class="item"><span class="idx">4</span> Я досліджую світ</div>
+                <div class="item"><span class="idx">5</span> Мистецтво</div>
+            </div>
         </div>
 
-        <div class="day-card">
-            <div class="day-header">Четвер</div>
-            <ul class="lessons-list">
-                <li class="lesson-item"><span class="num">1</span> Математика</li>
-                <li class="lesson-item"><span class="num">2</span> Укр. мова</li>
-                <li class="lesson-item"><span class="num">3</span> Я досліджую світ</li>
-                <li class="lesson-item"><span class="num">4</span> Англійська</li>
-                <li class="lesson-item"><span class="num">5</span> Фізкультура</li>
-                <li class="lesson-item special"><span class="num">6</span> Навчаємось разом</li>
-            </ul>
+        <div class="day">
+            <div class="day-title">Четвер</div>
+            <div class="list">
+                <div class="item"><span class="idx">1</span> Математика</div>
+                <div class="item"><span class="idx">2</span> Українська мова</div>
+                <div class="item"><span class="idx">3</span> Я досліджую світ</div>
+                <div class="item"><span class="idx">4</span> Англійська мова</div>
+                <div class="item"><span class="idx">5</span> Інформатика</div>
+            </div>
         </div>
 
-        <div class="day-card">
-            <div class="day-header">П'ятниця</div>
-            <ul class="lessons-list">
-                <li class="lesson-item"><span class="num">1</span> Укр. мова</li>
-                <li class="lesson-item"><span class="num">2</span> Математика</li>
-                <li class="lesson-item"><span class="num">3</span> Читання</li>
-                <li class="lesson-item special"><span class="num">4</span> Еврика</li>
-                <li class="lesson-item"><span class="num">5</span> Мистецтво</li>
-            </ul>
+        <div class="day">
+            <div class="day-title">П'ятниця</div>
+            <div class="list">
+                <div class="item"><span class="idx">1</span> Українська мова</div>
+                <div class="item"><span class="idx">2</span> Математика</div>
+                <div class="item"><span class="idx">3</span> Читання</div>
+                <div class="item"><span class="idx">4</span> Мистецтво</div>
+                <div class="item"><span class="idx">5</span> Фізкультура</div>
+            </div>
         </div>
     </div>
 </div>
