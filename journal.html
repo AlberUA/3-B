@@ -1,1 +1,107 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Електронний журнал</title>
+    <style>
+        :root { --primary: #34495e; --accent: #f1c40f; --bg: #f4f7f6; }
+        body { font-family: sans-serif; background: var(--bg); padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        
+        .controls { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; }
+        select, button { padding: 10px; border-radius: 5px; border: 1px solid #ddd; }
+        button { background: var(--primary); color: white; cursor: pointer; border: none; }
 
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #e0e0e0; padding: 8px; text-align: center; }
+        th { background: #f8f9fa; color: #666; font-size: 0.85em; }
+        .student-name { text-align: left; min-width: 150px; font-weight: bold; }
+        
+        input.grade { width: 35px; border: none; text-align: center; font-weight: bold; color: #2c3e50; }
+        input.grade:focus { background: #fffde7; outline: 1px solid var(--accent); }
+        
+        .back-link { display: inline-block; margin-bottom: 15px; color: #7f8c8d; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="index.html" class="back-link">← Назад до кабінету</a>
+    <h2>Електронний журнал 3-Б</h2>
+
+    <div class="controls">
+        <label>Предмет:</label>
+        <select id="subjectSelect">
+            <option value="math">Математика</option>
+            <option value="ukr">Українська мова</option>
+            <option value="reading">Читання</option>
+            <option value="eng">Англійська мова</option>
+            <option value="world">Я досліджую світ</option>
+        </select>
+        <button onclick="saveGrades()">Зберегти зміни</button>
+    </div>
+
+    <div class="table-wrapper">
+        <table id="journalTable">
+            <thead>
+                <tr id="headerRow">
+                    <th>№</th>
+                    <th>Учень</th>
+                    </tr>
+            </thead>
+            <tbody id="journalBody">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const subjects = ['math', 'ukr', 'reading', 'eng', 'world'];
+    let students = JSON.parse(localStorage.getItem('class_3b_students')) || [];
+    let allGrades = JSON.parse(localStorage.getItem('class_3b_grades')) || {};
+
+    const headerRow = document.getElementById('headerRow');
+    const journalBody = document.getElementById('journalBody');
+    const subjectSelect = document.getElementById('subjectSelect');
+
+    // Створюємо 10 колонок для оцінок (як символічні дати уроків)
+    function initTable() {
+        const subject = subjectSelect.value;
+        
+        // Очищення та створення заголовків
+        headerRow.innerHTML = '<th>№</th><th>Учень</th>';
+        for(let i=1; i<=10; i++) {
+            headerRow.innerHTML += `<th>Урок ${i}</th>`;
+        }
+
+        // Рендер учнів
+        journalBody.innerHTML = '';
+        students.forEach((name, sIdx) => {
+            let row = `<tr><td>${sIdx + 1}</td><td class="student-name">${name}</td>`;
+            for(let i=1; i<=10; i++) {
+                const gradeKey = `${subject}_${sIdx}_${i}`;
+                const val = allGrades[gradeKey] || '';
+                row += `<td><input type="text" class="grade" data-key="${gradeKey}" value="${val}" maxlength="2"></td>`;
+            }
+            row += `</tr>`;
+            journalBody.innerHTML += row;
+        });
+    }
+
+    function saveGrades() {
+        const inputs = document.querySelectorAll('.grade');
+        inputs.forEach(input => {
+            allGrades[input.dataset.key] = input.value;
+        });
+        localStorage.setItem('class_3b_grades', JSON.stringify(allGrades));
+        alert('Оцінки збережено!');
+    }
+
+    subjectSelect.addEventListener('change', initTable);
+    initTable(); // Перший запуск
+</script>
+
+</body>
+</html>
