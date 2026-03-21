@@ -28,6 +28,19 @@
         input.grade:focus { border-color: var(--accent); background: #fffde7; outline: none; }
         
         .back-link { text-decoration: none; color: #3498db; font-weight: 500; font-size: 0.9em; }
+
+        .hw-input {
+            transition: 0.3s;
+            font-size: 0.9em;
+        }
+        .hw-input:focus {
+            background: #fffde7;
+            border-color: #f1c40f !important;
+            outline: none;
+        }
+        #hwTable td {
+            padding: 5px;
+        }
     </style>
 </head>
 <body>
@@ -61,6 +74,28 @@
             </thead>
             <tbody id="journalBody"></tbody>
         </table>
+    </div>
+</div>
+
+<div class="container" style="margin-top: 20px; border-top: 4px solid var(--accent);">
+    <div class="header-box">
+        <h3 style="margin: 0;">📝 Домашнє завдання: <span id="subjectNameDisplay">Математика</span></h3>
+    </div>
+    
+    <div class="table-wrapper">
+        <table id="hwTable">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">Урок №</th>
+                    <th>Що задано (тема, вправи, сторінки)</th>
+                </tr>
+            </thead>
+            <tbody id="hwBody">
+                </tbody>
+        </table>
+    </div>
+    <div style="margin-top: 15px; text-align: right;">
+        <button onclick="saveAllData()" style="background: #3498db;">Зберегти все (Оцінки + ДЗ)</button>
     </div>
 </div>
 
@@ -165,6 +200,62 @@
     };
 
     subjectSelect.addEventListener('change', initJournal);
+
+    // 5. Додаємо новий об'єкт для ДЗ
+    let allHomework = JSON.parse(localStorage.getItem('class_3b_hw_v2')) || {};
+    
+    // Оновлюємо функцію initJournal, щоб вона малювала і таблицю ДЗ
+    function initJournal() {
+        const subject = subjectSelect.value;
+        const subjectText = subjectSelect.options[subjectSelect.selectedIndex].text;
+        document.getElementById('subjectNameDisplay').innerText = subjectText;
+    
+        // ... (тут ваш існуючий код рендеру таблиці оцінок) ...
+        // Викликаємо рендер таблиці ДЗ
+        renderHomeworkTable(subject);
+    }
+    
+    function renderHomeworkTable(subject) {
+        const hwBody = document.getElementById('hwBody');
+        hwBody.innerHTML = '';
+    
+        for (let i = 1; i <= 12; i++) {
+            const hwKey = `${subject}_hw_${i}`;
+            const hwValue = allHomework[hwKey] || '';
+            
+            hwBody.innerHTML += `
+                <tr>
+                    <td style="font-weight:bold; background:#f8f9fa;">${i}</td>
+                    <td>
+                        <input type="text" class="hw-input" 
+                               data-key="${hwKey}" 
+                               value="${hwValue}" 
+                               placeholder="Наприклад: ст. 45, впр. 3..." 
+                               style="width:95%; padding:8px; border:1px solid transparent; border-radius:4px;">
+                    </td>
+                </tr>
+            `;
+        }
+    }
+    
+    // Функція збереження тепер охоплює і ДЗ
+    window.saveAllData = function() {
+        // Зберігаємо оцінки
+        const gradeInputs = document.querySelectorAll('.grade');
+        gradeInputs.forEach(input => {
+            allGrades[input.dataset.key] = input.value;
+        });
+        localStorage.setItem('class_3b_grades_v2', JSON.stringify(allGrades));
+    
+        // Зберігаємо ДЗ
+        const hwInputs = document.querySelectorAll('.hw-input');
+        hwInputs.forEach(input => {
+            allHomework[input.dataset.key] = input.value;
+        });
+        localStorage.setItem('class_3b_hw_v2', JSON.stringify(allHomework));
+    
+        alert('Дані успішно збережено: оцінки та домашні завдання оновлено!');
+    };
     
     // Запуск при завантаженні
     document.addEventListener('DOMContentLoaded', initJournal);
