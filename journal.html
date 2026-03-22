@@ -179,7 +179,7 @@
 
         students.forEach((s, idx) => {
             let sum = 0, count = 0;
-            let row = `<tr><td>${idx + 1}</td><td style="min-width:180px;"><strong>${s.lastName}</strong> ${s.firstName}</td>`;
+            let row = `<tr><td>${idx + 1}</td><td style="min-width:180px;text-align:left"><strong>${s.lastName}</strong> ${s.firstName}</td>`;
             
             for(let i=1; i<=cols; i++) {
                 // Ключ тепер будується на основі унікального ID учня (s.id)
