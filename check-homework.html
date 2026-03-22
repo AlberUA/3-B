@@ -287,6 +287,14 @@
         currentSelectedStudentId = studentId;
         const subject = document.getElementById('subjectSelect').value;
         const student = students.find(s => s.id === studentId);
+
+        // Очищаємо старі візуальні класи (messy, perfect)
+        notebookPage.classList.remove('messy', 'perfect', 'math'); // <-- Додайте 'math' сюди
+    
+        // --- НОВА ЛОГІКА: ФОН КЛІТИНКА ---
+        if (subject === 'math') {
+            notebookPage.classList.add('math'); // Додаємо клітинку для математики
+        }
         
         if (!student) return;
 
