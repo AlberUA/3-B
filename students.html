@@ -104,7 +104,7 @@
                 <th>№</th>
                 <th>Прізвище та Ім'я</th>
                 <th>Стать</th>
-                <th>Дата нар.</th>
+                <th>Рівень знань</th> <th>Дата нар.</th>
                 <th>Вік</th>
                 <th style="text-align: right;">Дії</th>
             </tr>
@@ -217,12 +217,31 @@
         students.forEach((s, index) => {
             const age = calculateAge(s.birthDate);
             const genderSymbol = s.gender === 'Хлопчик' ? '👦' : '👧';
-
+            
+            // Логіка для відображення рівня знань
+            let levelLabel = '';
+            let levelColor = '';
+            
+            if (s.level === 'excellent') {
+                levelLabel = '🌟 Відмінник';
+                levelColor = '#27ae60'; // Зелений
+            } else if (s.level === 'good') {
+                levelLabel = '👍 Хорошист';
+                levelColor = '#f39c12'; // Помаранчевий
+            } else if (s.level === 'needs_help') {
+                levelLabel = '🆘 Потребує уваги';
+                levelColor = '#e74c3c'; // Червоний
+            } else {
+                levelLabel = '➖ Не вказано';
+                levelColor = '#95a5a6';
+            }
+    
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${index + 1}</td>
                 <td><strong>${s.lastName}</strong> ${s.firstName}</td>
                 <td><span class="gender-icon">${genderSymbol}</span> ${s.gender}</td>
+                <td style="color: ${levelColor}; font-weight: 500; font-size: 0.85em;">${levelLabel}</td>
                 <td>${s.birthDate}</td>
                 <td>${age} р.</td>
                 <td style="text-align: right;">
