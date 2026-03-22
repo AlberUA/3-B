@@ -125,7 +125,6 @@
     
     const database = firebase.database();
     
-    // Посилання на три різні гілки в базі
     const studentsRef = database.ref('students_v2');
     const gradesRef = database.ref('grades_v2');
     const homeworkRef = database.ref('homework_v2');
@@ -135,9 +134,8 @@
     let allHomework = {};
     const cols = 12;
 
-    // СЛУХАЧІ ДАНИХ (Спрацьовують при будь-якій зміні в хмарі)
+    // СЛУХАЧІ ДАНИХ
     
-    // 1. Завантаження учнів
     studentsRef.on('value', (snapshot) => {
         const data = snapshot.val();
         students = [];
@@ -145,19 +143,16 @@
             Object.keys(data).forEach(key => {
                 students.push({ id: key, ...data[key] });
             });
-            // Сортуємо, щоб список у журналі збігався зі списком реєстрації
             students.sort((a, b) => a.lastName.localeCompare(b.lastName, 'uk'));
         }
-        initJournal(); // Перемальовуємо, коли прийшли учні
+        initJournal(); 
     });
 
-    // 2. Завантаження оцінок
     gradesRef.on('value', (snapshot) => {
         allGrades = snapshot.val() || {};
         initJournal();
     });
 
-    // 3. Завантаження ДЗ
     homeworkRef.on('value', (snapshot) => {
         allHomework = snapshot.val() || {};
         renderHomeworkTable(document.getElementById('subjectSelect').value);
@@ -168,7 +163,6 @@
         const journalBody = document.getElementById('journalBody');
         const headerRow = document.getElementById('headerRow');
 
-        // Малюємо шапку
         let headerHTML = '<th>№</th><th>Прізвище та Ім\'я</th>';
         for(let i=1; i<=cols; i++) headerHTML += `<th>${i}</th>`;
         headerHTML += '<th>Сер. бал</th>';
@@ -179,13 +173,11 @@
 
         students.forEach((s, idx) => {
             let sum = 0, count = 0;
-            let row = `<tr><td>${idx + 1}</td><td style="min-width:180px;text-align:left"><strong>${s.lastName}</strong> ${s.firstName}</td>`;
+            let row = `<tr><td>${idx + 1}</td><td style="text-align:left"><strong>${s.lastName}</strong> ${s.firstName}</td>`;
             
             for(let i=1; i<=cols; i++) {
-                // Ключ тепер будується на основі унікального ID учня (s.id)
                 const key = `${subject}_${s.id}_${i}`;
                 const val = allGrades[key] || '';
-                
                 if (val && !isNaN(val)) { sum += parseInt(val); count++; }
                 
                 row += `<td><input type="text" class="grade" 
@@ -200,7 +192,6 @@
         });
     }
 
-    // Оновлення середнього балу (локально для швидкості)
     window.updateAverage = function(studentId) {
         let sum = 0, count = 0;
         const inputs = document.querySelectorAll(`.grade[data-student-id="${studentId}"]`);
@@ -215,38 +206,44 @@
     function renderHomeworkTable(subject) {
         const hwBody = document.getElementById('hwBody');
         hwBody.innerHTML = '';
+        
+        // Оновлюємо текстовий заголовок предмета в блоці ДЗ
+        const subjectSelect = document.getElementById('subjectSelect');
+        const subjectText = subjectSelect.options[subjectSelect.selectedIndex].text;
+        document.getElementById('subjectNameDisplay').innerText = subjectText;
+
         for (let i = 1; i <= 15; i++) {
             const key = `${subject}_hw_${i}`;
             hwBody.innerHTML += `<tr>
-                <td style="width:40px; font-weight:bold;">${i}</td>
+                <td style="font-weight:bold;">${i}</td>
                 <td><input type="text" class="hw-input" data-key="${key}" value="${allHomework[key] || ''}" style="width:98%; padding:8px; border:1px solid #eee;"></td>
             </tr>`;
         }
     }
 
-    // КНОПКА "ЗБЕРЕГТИ ВСЕ"
+    // Об'єднана функція збереження
     window.saveAllData = function() {
         const updates = {};
         
-        // Збираємо оцінки
         document.querySelectorAll('.grade').forEach(input => {
             updates[`/grades_v2/${input.dataset.key}`] = input.value;
         });
 
-        // Збираємо ДЗ
         document.querySelectorAll('.hw-input').forEach(input => {
             updates[`/homework_v2/${input.dataset.key}`] = input.value;
         });
 
-        // Відправляємо одним махом у Firebase (це швидше і надійніше)
         database.ref().update(updates)
-            .then(() => alert('Дані успішно синхронізовано з хмарою!'))
+            .then(() => alert('Всі дані (оцінки та ДЗ) успішно збережено!'))
             .catch(err => alert('Помилка збереження: ' + err));
     };
 
-    document.getElementById('subjectSelect').addEventListener('change', () => {
+    // Призначаємо ту саму функцію для кнопки "Зберегти зміни"
+    window.saveGrades = window.saveAllData;
+
+    document.getElementById('subjectSelect').addEventListener('change', function() {
         initJournal();
-        renderHomeworkTable(document.getElementById('subjectSelect').value);
+        renderHomeworkTable(this.value);
     });
 </script>
 
