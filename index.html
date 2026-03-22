@@ -161,73 +161,117 @@
 </div>
 
 <script>
+    // 1. КОНФІГУРАЦІЯ FIREBASE (Використовуйте свій databaseURL)
+    const firebaseConfig = {
+      apiKey: "AIzaSyC_B3MJTramTQ4PEj8Ws6pEIambP-JJ1rg",
+      authDomain: "darya-school.firebaseapp.com",
+      databaseURL: "https://darya-school-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "darya-school",
+      storageBucket: "darya-school.firebasestorage.app",
+      messagingSenderId: "228276864041",
+      appId: "1:228276864041:web:8e46975a0a9140e0580838"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // 2. ЗАХИСТ: Перевірка авторизації
+    firebase.auth().onAuthStateChanged((user) => {
+        if (!user) {
+            window.location.href = "login.html";
+        }
+    });
+
+    // 3. ФУНКЦІЯ ОНОВЛЕННЯ ДАШБОРДУ
     function updateDashboard() {
-        const students = JSON.parse(localStorage.getItem('class_3b_students_v2')) || [];
-        const allGrades = JSON.parse(localStorage.getItem('class_3b_grades_v2')) || {};
-        const allHomework = JSON.parse(localStorage.getItem('class_3b_hw_v2')) || {};
         const now = new Date();
         
-        // 1. Дата
+        // Встановлюємо дату відразу
         const options = { weekday: 'long', month: 'long', day: 'numeric' };
         document.getElementById('today-date').innerText = now.toLocaleDateString('uk-UA', options);
 
-        // 2. Статистика учнів
-        const boys = students.filter(s => s.gender === 'Хлопчик').length;
-        const girls = students.filter(s => s.gender === 'Дівчинка').length;
-        document.getElementById('class-summary').innerText = 
-            `У класі ${students.length} учнів (${boys} хлопчиків та ${girls} дівчаток).`;
-
-        // 3. Іменинники
-        const currentMonthDay = now.toISOString().slice(5, 10);
-        const bdayStudent = students.find(s => s.birthDate && s.birthDate.slice(5, 10) === currentMonthDay);
-        const bdayTag = document.getElementById('birthday-tag');
+        // Отримуємо дані з Firebase (одноразово для дашборду або через .on для автооновлення)
+        // Використовуємо .on('value'), щоб дашборд оновлювався сам, якщо ви змінили дані в іншій вкладці
         
-        if (bdayStudent) {
-            bdayTag.innerHTML = `🎂 Сьогодні день народження у <strong>${bdayStudent.firstName}</strong>!`;
-        } else {
-            bdayTag.innerText = "🎈 Сьогодні без іменинників";
-        }
+        const studentsRef = database.ref('students_v2');
+        const homeworkRef = database.ref('homework_v2');
 
-        // 4. ЛОГІКА ДОМАШНЬОГО ЗАВДАННЯ
-        const hwContainer = document.getElementById('hw-list-container');
-        const subjects = {
-            math: "Математика",
-            ukr: "Українська мова",
-            reading: "Читання",
-            eng: "Англійська мова",
-            world: "Я досліджую світ"
-        };
-
-        let hwHTML = "";
-        let foundAny = false;
-
-        Object.keys(subjects).forEach(subKey => {
-            // Знаходимо останній проведений урок (де є оцінки або ДЗ)
-            let lastLesson = 0;
-            for (let i = 1; i <= 12; i++) {
-                if (allHomework[`${subKey}_hw_${i}`]) {
-                    lastLesson = i;
-                }
+        // Слухаємо учнів
+        studentsRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            let students = [];
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    students.push({ id: key, ...data[key] });
+                });
             }
 
-            // Показуємо завдання на наступний урок
-            const nextLesson = lastLesson; // Зазвичай вчитель записує ДЗ НА поточний номер уроку
-            const task = allHomework[`${subKey}_hw_${nextLesson}`];
+            // Статистика учнів
+            const boys = students.filter(s => s.gender === 'Хлопчик').length;
+            const girls = students.filter(s => s.gender === 'Дівчинка').length;
+            document.getElementById('class-summary').innerText = 
+                `У класі ${students.length} учнів (${boys} хлопчиків та ${girls} дівчаток).`;
 
-            if (task) {
-                hwHTML += `
-                    <div style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed #eee;">
-                        <strong style="color: #3498db;">${subjects[subKey]}:</strong> 
-                        <span style="color: #34495e;">${task}</span>
-                    </div>`;
-                foundAny = true;
+            // Іменинники (порівнюємо МІСЯЦЬ та ДЕНЬ)
+            const currentMonthDay = now.toISOString().slice(5, 10); // "MM-DD"
+            const bdayStudent = students.find(s => s.birthDate && s.birthDate.slice(5, 10) === currentMonthDay);
+            const bdayTag = document.getElementById('birthday-tag');
+            
+            if (bdayStudent) {
+                bdayTag.innerHTML = `🎂 Сьогодні день народження у <strong>${bdayStudent.firstName}</strong>!`;
+            } else {
+                bdayTag.innerText = "🎈 Сьогодні без іменинників";
             }
         });
 
-        hwContainer.innerHTML = foundAny ? hwHTML : '<p style="color: #95a5a6;">На сьогодні завдань не знайдено. Заповніть їх у журналі.</p>';
+        // Слухаємо домашнє завдання
+        homeworkRef.on('value', (snapshot) => {
+            const allHomework = snapshot.val() || {};
+            const hwContainer = document.getElementById('hw-list-container');
+            const subjects = {
+                math: "Математика",
+                ukr: "Українська мова",
+                reading: "Читання",
+                eng: "Англійська мова",
+                world: "Я досліджую світ"
+            };
+
+            let hwHTML = "";
+            let foundAny = false;
+
+            Object.keys(subjects).forEach(subKey => {
+                // Знаходимо останнє введене ДЗ для цього предмета (серед 12 колонок)
+                let lastTask = "";
+                for (let i = 1; i <= 12; i++) {
+                    const task = allHomework[`${subKey}_hw_${i}`];
+                    if (task && task.trim() !== "") {
+                        lastTask = task; // Запам'ятовуємо останнє знайдене
+                    }
+                }
+
+                if (lastTask) {
+                    hwHTML += `
+                        <div style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed #eee;">
+                            <strong style="color: #3498db;">${subjects[subKey]}:</strong> 
+                            <span style="color: #34495e;">${lastTask}</span>
+                        </div>`;
+                    foundAny = true;
+                }
+            });
+
+            hwContainer.innerHTML = foundAny ? hwHTML : '<p style="color: #95a5a6;">На сьогодні завдань не знайдено. Заповніть їх у журналі.</p>';
+        });
     }
 
+    // Запуск при завантаженні
     document.addEventListener('DOMContentLoaded', updateDashboard);
+
+    // Функція виходу (додайте кнопку в HTML, якщо потрібно)
+    window.logout = function() {
+        firebase.auth().signOut().then(() => {
+            window.location.href = "login.html";
+        });
+    };
 </script>
 
 </body>
