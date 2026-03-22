@@ -335,6 +335,10 @@
         const text = generatedResponses[studentId];
         notebookTextBlock.innerText = text || "Натисніть кнопку генерації.";
 
+        notebookTextBlock.style.color = blueShades[Math.floor(Math.random() * blueShades.length)];
+        // Це важливо: скидаємо примусовий колір попереднього редагування
+        document.execCommand('foreColor', false, notebookTextBlock.style.color);
+
         // 4. Активний учень у списку
         document.querySelectorAll('.student-item').forEach(item => item.classList.remove('active'));
         const el = document.getElementById(`student-${studentId}`);
@@ -455,10 +459,18 @@
             });
         });
     };
-    // Додаємо можливість писати "червоною ручкою"
-    document.getElementById('notebookText').addEventListener('input', function(e) {
-        // Весь текст, який вводить вчитель після завантаження, буде червоним
-        this.style.textDecoration = "underline wavy #e74c3c"; 
+    
+    // Коли вчитель клікає в зошит, вмикається "червона ручка"
+    document.getElementById('notebookText').addEventListener('focus', function() {
+        // Встановлюємо колір тексту для нових символів
+        document.execCommand('foreColor', false, '#e74c3c');
+    });
+    
+    // Додатковий захист: якщо вона виділить текст і почне писати, він теж буде червоним
+    document.getElementById('notebookText').addEventListener('keydown', function(e) {
+        if (!document.queryCommandValue('foreColor').includes('rgb(231, 76, 60)')) {
+            document.execCommand('foreColor', false, '#e74c3c');
+        }
     });
 </script>
 
