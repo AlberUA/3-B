@@ -275,6 +275,13 @@
             window.location.href = "login.html";
         });
     };
+
+    // Дзвінок на урок
+    window.addEventListener('click', function() {
+        const audio = new Audio('https://www.soundjay.com/misc/sounds/school-bell-1.mp3');
+        audio.volume = 0.2; // Робимо не дуже голосно
+        audio.play();
+    }, { once: true }); // Спрацює лише один раз при першому кліку
 </script>
 
 </body>
