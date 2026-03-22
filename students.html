@@ -136,6 +136,14 @@
                 <option value="Дівчинка">Дівчинка</option>
             </select>
         </div>
+        <div style="margin-bottom:20px;">
+            <label>Рівень знань</label>
+            <select id="editStudentLevel" style="width:100%; box-sizing: border-box; padding: 10px; border-radius: 6px; border: 1px solid #ddd;">
+                <option value="excellent">Відмінник (10-12)</option>
+                <option value="good">Хорошист (7-9)</option>
+                <option value="needs_help">Потребує уваги (1-6)</option>
+            </select>
+        </div>
         <div style="display:flex; gap:10px; justify-content:flex-end;">
             <button onclick="closeEditModal()" style="background:#bdc3c7; border:none; padding:10px 15px; border-radius:6px; cursor:pointer;">Скасувати</button>
             <button onclick="saveStudentEdit()" style="background:var(--blue); border:none; padding:10px 15px; color:white; border-radius:6px; cursor:pointer;">Зберегти</button>
@@ -226,22 +234,23 @@
         });
     }
 
-    // 5. Оновлені функції додавання, видалення та редагування (тепер працюють з Firebase)
+    // 5. Оновлені функції додавання
     document.getElementById('addBtn').addEventListener('click', () => {
         const fName = document.getElementById('firstName').value.trim();
         const lName = document.getElementById('lastName').value.trim();
         const gender = document.getElementById('gender').value;
         const bDate = document.getElementById('birthDate').value;
-
+        const level = document.getElementById('studentLevel').value; // ДОДАНО
+    
         if (fName && lName && bDate) {
-            // Додавання через Firebase (метод .push створює унікальний ID)
             studentsRef.push({
                 firstName: fName,
                 lastName: lName,
                 gender: gender,
-                birthDate: bDate
+                birthDate: bDate,
+                level: level // ДОДАНО
             });
-
+    
             // Очищення полів
             document.getElementById('firstName').value = '';
             document.getElementById('lastName').value = '';
@@ -258,31 +267,34 @@
         }
     };
 
+    // Функція відкриття модалки
     window.openEditModal = function(studentId) {
         const s = students.find(student => student.id === studentId);
         if(s) {
-            document.getElementById('editIndex').value = studentId; // Зберігаємо ID в прихованому полі
+            document.getElementById('editIndex').value = studentId;
             document.getElementById('editLastName').value = s.lastName;
             document.getElementById('editFirstName').value = s.firstName;
             document.getElementById('editBirthDate').value = s.birthDate;
             document.getElementById('editGender').value = s.gender;
+            document.getElementById('editStudentLevel').value = s.level || 'good'; // ДОДАНО (дефолт хорошист)
             document.getElementById('editModal').style.display = 'flex';
         }
     };
 
     window.closeEditModal = () => document.getElementById('editModal').style.display = 'none';
 
+    // Функція збереження змін
     window.saveStudentEdit = function() {
         const studentId = document.getElementById('editIndex').value;
-
-        // Оновлення через Firebase (метод .update)
+    
         database.ref('students_v2/' + studentId).update({
             lastName: document.getElementById('editLastName').value,
             firstName: document.getElementById('editFirstName').value,
             birthDate: document.getElementById('editBirthDate').value,
-            gender: document.getElementById('editGender').value
+            gender: document.getElementById('editGender').value,
+            level: document.getElementById('editStudentLevel').value // ДОДАНО
         });
-
+    
         closeEditModal();
     };
 </script>
