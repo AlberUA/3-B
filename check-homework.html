@@ -249,31 +249,69 @@
         const dateStr = now.toLocaleDateString('uk-UA');
         const random = (arr) => arr[Math.floor(Math.random() * arr.length)];
         
-        const variations = {
-            intro: ["Домашня робота", "Домашнє завдання", "Робота вдома"],
-            math_phrases: ["Все правильно.", "Завдання виконано.", "Перевірено."],
-            ukr_phrases: ["Каліграфічно.", "Без помилок.", "Охайно."],
-            closings: ["Дякую!", "Кінець.", "Готово."]
-        };
-
-        if (level === 'excellent') {
-            const intro = random(variations.intro);
-            const closing = random(variations.closings);
-            if (subject === 'math') {
-                return `${dateStr}.\n${intro}.\n\nЗавдання: ${task}\n\n1) 10+10=20\n2) 20+20=40\n${random(variations.math_phrases)}\n\n${closing}`;
+        // Залишаємо тільки технічні заголовки
+        const intros = ["Домашня робота", "Домашнє завдання", "Робота вдома"];
+    
+        // 1. ПАРСИНГ ПРИКЛАДІВ
+        let mathContent = "";
+        if (subject === 'math') {
+            const mathRegex = /(\d+[\+\-\*\/x:]\d+)/g; 
+            const foundExamples = task.match(mathRegex);
+    
+            if (foundExamples && foundExamples.length > 0) {
+                foundExamples.forEach((example, index) => {
+                    try {
+                        let cleanExample = example.replace(':', '/').replace('x', '*');
+                        let result = eval(cleanExample); 
+    
+                        if (level === 'excellent') {
+                            mathContent += `${index + 1}) ${example} = ${result}\n`;
+                        } else if (level === 'good') {
+                            // Помилка з шансом 20%
+                            let finalResult = (Math.random() > 0.8) ? result + 1 : result;
+                            mathContent += `${index + 1}) ${example} = ${finalResult}\n`;
+                        } else {
+                            // Слабкий учень пише випадково
+                            mathContent += `${index + 1}) ${example} = ${Math.floor(Math.random() * 50)}\n`;
+                        }
+                    } catch (e) {
+                        mathContent += `${index + 1}) ${example} = ?\n`;
+                    }
+                });
             }
-            return `${dateStr}.\n${intro}.\n\nВправа: ${task}.\nТекст виконано ${random(variations.ukr_phrases)}\n\n${closing}`;
         }
-
+    
+        // 2. ФОРМУВАННЯ ЧИСТОГО ТЕКСТУ
+        const intro = random(intros);
+    
+        if (subject === 'math') {
+            // Тільки дата, заголовок і приклади. Ніяких зайвих фраз.
+            const body = mathContent || "Завдання виконано.";
+            return `${dateStr}.\n${intro}.\n\n${body}`;
+        }
+    
+        // Для інших предметів (наприклад, мова) — просто переписане завдання або текст
+        if (level === 'excellent') {
+            return `${dateStr}.\n${intro}.\n\n${task}\n(Виконано без помилок)`;
+        }
+        
         if (level === 'good') {
-            return `${dateStr}.\nДомашня робота.\n\nЗавдання: ${task}\n\nТут є маленька помилка, але я стараюся!`;
+            return `${dateStr}.\n${intro}.\n\n${task}`;
         }
-
-        if (level === 'needs_help') {
-            const excuses = ["Складно...", "Не встиг", "Забув"];
-            return `\n${random(excuses)}.\nЯ не зробив завдання.`;
+    
+        return `${dateStr}.\n${intro}.\n\nНе встиг дорахувати...`;
+    }
+    
+        // --- ЛОГІКА ДЛЯ ІНШИХ ПРЕДМЕТІВ (Українська мова тощо) ---
+        if (level === 'excellent') {
+            return `${dateStr}.\n${random(variations.intro)}.\n\nЗавдання: ${task}\n\nТекст переписано каліграфічно. Помилок не виявлено.\n\n${random(variations.closings)}`;
         }
-        return "Роботу не знайдено.";
+    
+        if (level === 'good') {
+            return `${dateStr}.\nДомашня робота.\n\nЗавдання: ${task}\n\nЯ дуже старався, але міг десь помилитися в буквах.`;
+        }
+    
+        return `\nЯ не зрозумів завдання: "${task}".\nВибачте, Даріє Олександрівно.`;
     }
 
     // 6. ОЦІНКА ТА ЗВУК
