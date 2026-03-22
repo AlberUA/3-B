@@ -323,24 +323,48 @@
     // 6. ОЦІНКА ТА ЗВУК
     window.sendGradeToJournal = function() {
         const gradeValue = document.getElementById('quickGrade').value;
+        const commentValue = document.getElementById('teacherComment').value; // Отримуємо текст
         const subject = document.getElementById('subjectSelect').value;
-        if (!currentSelectedStudentId || !gradeValue) return;
-
+        
+        if (!currentSelectedStudentId || !gradeValue) { alert("Оберіть учня та поставте оцінку!"); return; }
+    
         database.ref('grades_v2').once('value', (snapshot) => {
             const allGrades = snapshot.val() || {};
             let targetCol = 1;
+            
             for (let i = 1; i <= 12; i++) {
                 if (!allGrades[`${subject}_${currentSelectedStudentId}_${i}`]) {
                     targetCol = i; break;
                 }
             }
+            
             const key = `${subject}_${currentSelectedStudentId}_${targetCol}`;
-            database.ref(`grades_v2/${key}`).set(gradeValue).then(() => {
+            
+            // Зберігаємо об'єкт: і оцінку, і коментар
+            const dataToSave = {
+                value: gradeValue,
+                comment: commentValue,
+                date: new Date().toLocaleDateString('uk-UA')
+            };
+    
+            database.ref(`grades_v2/${key}`).set(dataToSave).then(() => {
+                // Звук печатки
                 new Audio('https://www.soundjay.com/communication/sounds/stamp-mount-1.mp3').play();
+                
+                // Відображаємо оцінку на зошиті
                 const s = document.getElementById('gradeSticker');
                 s.innerText = gradeValue;
                 s.style.display = 'block';
+                
+                // Відображаємо коментар внизу зошита (червоним кольором)
+                const notebook = document.getElementById('notebookText');
+                notebook.innerHTML += `\n\n<span style="color: #d63031; font-family: 'Caveat', cursive; border-top: 1px dashed #fab1a0; display: block; padding-top: 10px;">Вчитель: ${commentValue || 'Перевірено.'}</span>`;
+                
+                // Очищаємо поля
                 document.getElementById('quickGrade').value = '';
+                document.getElementById('teacherComment').value = '';
+                
+                alert(`Учня ${currentSelectedStudentId} оцінено!`);
             });
         });
     };
