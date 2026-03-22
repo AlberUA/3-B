@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <link rel="icon" href="favicon.ico">
+    <title>Перевірка робіт 3-Б</title>
+    <style>
+        :root { --primary: #34495e; --accent: #f1c40f; --bg: #f4f7f6; --text-hand: #2c3e50; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: var(--primary); }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        
+        .header-box { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #f1c40f; padding-bottom: 15px;}
+        .controls { display: flex; gap: 15px; align-items: center; }
+        
+        select, button { padding: 10px 15px; border-radius: 6px; border: 1px solid #ddd; font-size: 0.9em; }
+        button { background: #3498db; color: white; cursor: pointer; border: none; font-weight: bold; transition: background 0.2s; }
+        button:hover { background: #2980b9; }
+        
+        .back-link { display: block; text-decoration: none; color: #3498db; font-weight: 500; font-size: 0.9em; margin-bottom: 20px }
+
+        /* Стиль списку учнів */
+        .student-list { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .student-item { background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #eee; cursor: pointer; transition: 0.2s; }
+        .student-item:hover { background: #eef0f2; transform: translateX(5px); }
+        .student-item.active { border-color: var(--accent); background: #fffde7; font-weight: bold; }
+        .student-name { font-size: 1.1em; color: var(--primary); }
+        .student-level { font-size: 0.8em; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Стиль зошита (Notebook) */
+        .notebook-container { display: none; margin-top: 20px; padding: 20px; background: white; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: inset 0 0 10px rgba(0,0,0,0.02); }
+        .notebook-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        .notebook-title { font-size: 1.2em; color: var(--primary); }
+        
+        .notebook-page { 
+            position: relative;
+            width: 100%; 
+            min-height: 400px; 
+            background: #fff; 
+            background-image: linear-gradient(#f0f0f0 1px, transparent 1px);
+            background-size: 100% 2rem; /* Смужки */
+            padding: 2rem;
+            box-sizing: border-box;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .notebook-text {
+            font-family: 'Comic Sans MS', 'Cursive', sans-serif; /* "Рукописний" шрифт */
+            font-size: 1.2rem;
+            line-height: 2rem;
+            color: var(--text-hand);
+            white-space: pre-wrap; /* Зберігає переноси рядків */
+        }
+        
+        /* Червоні поля */
+        .notebook-page::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 4rem;
+            width: 2px; height: 100%;
+            background: #e74c3c;
+            opacity: 0.6;
+        }
+
+        .action-box { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .btn-grade { background: #2ecc71; }
+        .btn-grade:hover { background: #27ae60; }
+
+        /* Стікер для оцінки */
+        .grade-sticker { display: none; position: absolute; top: 2rem; right: 2rem; padding: 10px 20px; background: #e74c3c; color: white; border-radius: 50%; font-size: 2em; font-weight: bold; transform: rotate(15deg); box-shadow: 2px 2px 5px rgba(0,0,0,0.2); z-index: 10;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-box">
+        <div>
+            <a href="index.html" class="back-link">← Назад до кабінету</a>
+            <h1>🔍 Перевірка робіт (Тренажер)</h1>
+        </div>
+        <div class="controls">
+            <select id="subjectSelect">
+                <option value="math">Математика</option>
+                <option value="ukr">Українська мова</option>
+                <option value="reading">Читання</option>
+                <option value="eng">Англійська мова</option>
+                <option value="world">Я досліджую світ</option>
+            </select>
+            <button onclick="generateClassResponses()">Отримати роботи учнів</button>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 20px;">
+        <div style="flex: 1;">
+            <h3>Учні класу (8)</h3>
+            <div id="studentList" class="student-list">
+                </div>
+        </div>
+
+        <div style="flex: 2;">
+            <div id="notebookContainer" class="notebook-container">
+                <div class="notebook-header">
+                    <div class="notebook-title">Зошит: <strong id="currentStudentName"></strong></div>
+                    <div class="notebook-level" id="currentStudentLevel"></div>
+                </div>
+                
+                <div class="notebook-page">
+                    <div id="gradeSticker" class="grade-sticker">10</div>
+                    <div class="notebook-text" id="notebookText">
+                        </div>
+                </div>
+
+                <div class="action-box">
+                    <button class="btn-grade" onclick="openJournalToGrade()">Перейти до Журналу</button>
+                </div>
+            </div>
+            
+            <div id="emptyMsg" style="text-align: center; margin-top: 100px; color: #95a5a6;">
+                <p>Натисніть "Отримати роботи учнів" та оберіть учня зі списку ліворуч.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyC_B3MJTramTQ4PEj8Ws6pEIambP-JJ1rg",
+      authDomain: "darya-school.firebaseapp.com",
+      projectId: "darya-school",
+      databaseURL: "https://darya-school-default-rtdb.europe-west1.firebasedatabase.app",
+      storageBucket: "darya-school.firebasestorage.app",
+      messagingSenderId: "228276864041",
+      appId: "1:228276864041:web:8e46975a0a9140e0580838"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+
+    // ЗАХИСТ: Перевірка авторизації
+    firebase.auth().onAuthStateChanged((user) => {
+        if (!user) {
+            window.location.href = "login.html";
+        }
+    });
+    
+    const database = firebase.database();
+    
+    // Глобальні змінні
+    let students = [];
+    let generatedResponses = {}; // Сховище для згенерованих робіт
+    let currentSelectedStudentId = null;
+
+    // 1. ЗАВАНТАЖЕННЯ УЧНІВ ПРИ ЗАВАНТАЖЕННІ СТОРІНКИ
+    database.ref('students_v2').once('value', (snapshot) => {
+        const data = snapshot.val();
+        students = [];
+        if (data) {
+            Object.keys(data).forEach(key => {
+                students.push({ id: key, ...data[key] });
+            });
+            // Сортування
+            students.sort((a, b) => a.lastName.localeCompare(b.lastName, 'uk'));
+            renderStudentList();
+        }
+    });
+
+    // 2. РЕНДЕР СПИСКУ УЧНІВ
+    function renderStudentList() {
+        const list = document.getElementById('studentList');
+        list.innerHTML = '';
+        
+        if (students.length === 0) {
+            list.innerHTML = '<p style="color:#95a5a6;">Спершу додайте учнів у розділі "Реєстрація"</p>';
+            return;
+        }
+
+        students.forEach(s => {
+            const item = document.createElement('div');
+            item.className = 'student-item';
+            item.id = `student-${s.id}`;
+            item.onclick = () => showStudentNotebook(s.id);
+            
+            // Відображаємо рівень знань
+            const levelMap = {
+                'excellent': 'Відмінник',
+                'good': 'Хорошист',
+                'needs_help': 'Слабкий'
+            };
+            const levelText = levelMap[s.level] || 'Невказано';
+            
+            item.innerHTML = `
+                <div class="student-name"><strong>${s.lastName}</strong> ${s.firstName}</div>
+                <div class="student-level">${levelText}</div>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    // 3. ГОЛОВНА ФУНКЦІЯ: ГЕНЕРАЦІЯ ВІДПОВІДЕЙ КЛАСУ
+    window.generateClassResponses = function() {
+        if (students.length === 0) { alert('Немає учнів для генерації.'); return; }
+        
+        const subject = document.getElementById('subjectSelect').value;
+        generatedResponses = {}; // Очищаємо попередні
+        
+        // Імітація: отримуємо тему ДЗ з Журналу (останній урок)
+        database.ref('homework_v2').once('value', (snapshot) => {
+            const allHomework = snapshot.val() || {};
+            let lastTaskDescription = "Робота над завданням з підручника."; // Дефолтне завдання
+
+            // Шукаємо останнє введене ДЗ
+            for (let i = 1; i <= 15; i++) {
+                const task = allHomework[`${subject}_hw_${i}`];
+                if (task && task.trim() !== "") { lastTaskDescription = task; }
+            }
+
+            // Генеруємо відповідь для КОЖНОГО учня
+            students.forEach(s => {
+                const response = getAIGeneratedResponse(subject, s.level, lastTaskDescription);
+                generatedResponses[s.id] = response;
+            });
+
+            alert(`Роботи учнів з предмета "${subject}" згенеровано! Оберіть учня для перевірки.`);
+            
+            // Якщо учень вже був вибраний — оновлюємо його зошит
+            if (currentSelectedStudentId) {
+                showStudentNotebook(currentSelectedStudentId);
+            } else {
+                // Показуємо порожнє повідомлення
+                document.getElementById('emptyMsg').style.display = 'block';
+                document.getElementById('notebookContainer').style.display = 'none';
+            }
+        });
+    };
+
+    // 4. ВІДОБРАЖЕННЯ ЗОШИТА УЧНЯ
+    function showStudentNotebook(studentId) {
+        currentSelectedStudentId = studentId;
+        const student = students.find(s => s.id === studentId);
+        
+        // Підсвічуємо вибраного учня
+        document.querySelectorAll('.student-item').forEach(item => item.classList.remove('active'));
+        document.getElementById(`student-${studentId}`).classList.add('active');
+        
+        // Ховаємо порожнє повідомлення
+        document.getElementById('emptyMsg').style.display = 'none';
+        document.getElementById('notebookContainer').style.display = 'block';
+        document.getElementById('gradeSticker').style.display = 'none'; // Сховуємо стару оцінку
+
+        // Заповнюємо дані
+        document.getElementById('currentStudentName').innerText = `${student.firstName} ${student.lastName}`;
+        const levelMap = { 'excellent': 'Відмінник', 'good': 'Хорошист', 'needs_help': 'Слабкий' };
+        document.getElementById('currentStudentLevel').innerText = `Рівень: ${levelMap[student.level] || 'Невказано'}`;
+
+        // Отримуємо текст роботи
+        const text = generatedResponses[studentId];
+        const notebookTextBlock = document.getElementById('notebookText');
+        
+        if (text) {
+            notebookTextBlock.innerText = text;
+            notebookTextBlock.style.color = 'var(--text-hand)';
+        } else {
+            notebookTextBlock.innerText = "Учень ще не здав роботу (Натисніть 'Отримати роботи учнів').";
+            notebookTextBlock.style.color = '#95a5a6';
+        }
+    }
+
+    // 5. ЛОГІКА ІМІТАЦІЇ (База знань ШІ-тренажера)
+    function getAIGeneratedResponse(subject, level, task) {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('uk-UA');
+        
+        const baseResponses = {
+            math: {
+                excellent: `${dateStr}.\nДомашня робота.\n\nЗавдання: ${task}\n\nПриклад 1: 5 + 3 = 8.\nПриклад 2: 12 - 4 = 8.\nЗадача: Відповідь 5 яблук.\nВсе виконано охайно.`,
+                good: `${dateStr}.\nДомашня робота.\n\nЗавдання: ${task}\n\nПриклад 1: 5 + 3 = 8.\nПриклад 2: 12 - 4 = 7. (Ой, 8!)\nЗадача: Відповідь 5 яблук.\n`,
+                needs_help: `\nДомашня робота.\n\n${task}\n\nя незнаю... 5+3=9`
+            },
+            ukr: {
+                excellent: `${dateStr}.\nДомашня робота.\n\nВправа за завданням: ${task}.\n\nРечення: Сьогодні сонячний день. Пташки співають у лісі.\nПереписано каліграфічно.`,
+                good: `${dateStr}.\nДомашня робота.\n\nВправа: ${task}.\n\nРечення: Сьогодні сонячний день. Пташки співают у лісі.\n`,
+                needs_help: `\n\nСьогодні сонний ден. Пташки сплять.\n`
+            },
+            world: {
+                excellent: `${dateStr}.\nЯДС.\n\nТема: ${task}.\n\nЯ дізнався, що вода буває трьох станів: тверда (лід), рідка та газоподібна.`,
+                good: `${dateStr}.\nЯДС.\n\nТема: ${task}.\n\nЯ дізнався про воду. Вона є тверда (лід) і рідка.`,
+                needs_help: `\n\nВода це вода.\n`
+            },
+            eng: {
+                excellent: `${dateStr}.\nHomework.\n\nTask: ${task}.\n\nI have a cat. It is white and black. I like it.`,
+                good: `${dateStr}.\nHomework.\n\nTask: ${task}.\n\nI have a cat. It is white.`,
+                needs_help: `\n\ncat. dog. ok.\n`
+            },
+            reading: {
+                excellent: `${dateStr}.\nЧитання.\n\n${task}.\n\nЯ прочитав оповідання. Воно мені сподобалося, бо вчило бути добрим.\n`,
+                good: `${dateStr}.\nЧитання.\n\n${task}.\n\nЯ прочитав оповідання. Воно нормальне.\n`,
+                needs_help: `\n\nПрочитав.\n`
+            }
+        };
+
+        // Беремо шаблон або порожній рядок, якщо щось пішло не так
+        const responseTemplate = baseResponses[subject] ? baseResponses[subject][level] : "Роботу не виконано.";
+        
+        // Трохи випадковості (бо навіть відмінник може забути дату)
+        if (level === 'excellent' && Math.random() < 0.1) {
+            return responseTemplate.replace(dateStr, ""); // Видаляємо дату
+        }
+        
+        return responseTemplate;
+    }
+
+    // 6. ПЕРЕХІД ДО ЖУРНАЛУ ДЛЯ ВИСТАВЛЕННЯ ОЦІНКИ
+    window.openJournalToGrade = function() {
+        if (!currentSelectedStudentId) return;
+        const subject = document.getElementById('subjectSelect').value;
+        // Переходимо до журналу, передаючи параметри в URL
+        window.location.href = `journal.html?studentId=${currentSelectedStudentId}&subject=${subject}`;
+    };
+
+    // При зміні предмета ховаємо зошит
+    document.getElementById('subjectSelect').addEventListener('change', () => {
+        generatedResponses = {};
+        document.getElementById('emptyMsg').style.display = 'block';
+        document.getElementById('notebookContainer').style.display = 'none';
+        document.querySelectorAll('.student-item').forEach(item => item.classList.remove('active'));
+    });
+</script>
+
+</body>
+</html>
