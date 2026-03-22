@@ -285,27 +285,43 @@
         });
     };
 
-    // 4. ВІДОБРАЖЕННЯ ЗОШИТА (ВИПРАВЛЕНО)
+    // 4. ВІДОБРАЖЕННЯ ЗОШИТА (ПОВНІСТЮ ВИПРАВЛЕНО)
     function showStudentNotebook(studentId) {
         currentSelectedStudentId = studentId;
         const subject = document.getElementById('subjectSelect').value;
         const student = students.find(s => s.id === studentId);
-
-        // Очищаємо старі візуальні класи (messy, perfect)
-        notebookPage.classList.remove('messy', 'perfect', 'math'); // <-- Додайте 'math' сюди
-    
-        // --- НОВА ЛОГІКА: ФОН КЛІТИНКА ---
-        if (subject === 'math') {
-            notebookPage.classList.add('math'); // Додаємо клітинку для математики
-        }
         
         if (!student) return;
 
-        // 1. Оновлюємо архів (винесено в логіку всередині)
+        // --- 1. СПОЧАТКУ ОГОЛОШУЄМО ЗМІННІ (ЕЛЕМЕНТИ) ---
+        const notebookPage = document.querySelector('.notebook-page');
+        const notebookTextBlock = document.getElementById('notebookText');
         const archiveList = document.getElementById('archiveList');
         const archiveContainer = document.getElementById('gradesArchive');
+
+        // --- 2. ТЕПЕР МОЖНА ПРАЦЮВАТИ З КЛАСАМИ ---
+        // Очищаємо всі старі ефекти
+        notebookPage.classList.remove('messy', 'perfect', 'math');
+        notebookTextBlock.classList.remove('handwriting-excellent', 'handwriting-good', 'handwriting-needs_help');
+
+        // Додаємо клітинку, якщо це математика
+        if (subject === 'math') {
+            notebookPage.classList.add('math');
+        }
+
+        // Додаємо візуальний рівень учня
+        if (student.level === 'excellent') {
+            notebookPage.classList.add('perfect');
+            notebookTextBlock.classList.add('handwriting-excellent');
+        } else if (student.level === 'needs_help') {
+            notebookPage.classList.add('messy');
+            notebookTextBlock.classList.add('handwriting-needs_help');
+        } else {
+            notebookTextBlock.classList.add('handwriting-good');
+        }
+
+        // --- 3. ЗАВАНТАЖЕННЯ АРХІВУ ---
         archiveList.innerHTML = ''; 
-        
         database.ref('grades_v2').once('value', (snapshot) => {
             const allGrades = snapshot.val() || {};
             let hasGrades = false;
@@ -319,7 +335,6 @@
                     const date = typeof gradeData === 'object' ? gradeData.date : 'Раніше';
 
                     const gradeBox = document.createElement('div');
-                    gradeBox.className = 'archive-item'; // Можна додати стиль в CSS
                     gradeBox.style = `background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd; font-size: 0.9em; min-width: 60px; text-align: center; cursor: help;`;
                     gradeBox.title = comm || "Без коментаря";
                     gradeBox.innerHTML = `<div style="color: #e74c3c; font-weight: bold; font-size: 1.2em;">${val}</div>
@@ -330,36 +345,17 @@
             archiveContainer.style.display = hasGrades ? 'block' : 'none';
         });
 
-        // 2. Візуальний стан зошита
-        const notebookPage = document.querySelector('.notebook-page');
-        const notebookTextBlock = document.getElementById('notebookText');
-
-        notebookPage.classList.remove('messy', 'perfect');
-        notebookTextBlock.classList.remove('handwriting-excellent', 'handwriting-good', 'handwriting-needs_help');
-
-        if (student.level === 'excellent') {
-            notebookPage.classList.add('perfect');
-            notebookTextBlock.classList.add('handwriting-excellent');
-        } else if (student.level === 'needs_help') {
-            notebookPage.classList.add('messy');
-            notebookTextBlock.classList.add('handwriting-needs_help');
-        } else {
-            notebookTextBlock.classList.add('handwriting-good');
-        }
-
-        // 3. Колір чорнила та текст
+        // --- 4. КОЛІР ПАСТИ ТА ТЕКСТ ---
         const blueShades = ['#2c3e50', '#000080', '#191970', '#1e3799'];
-        notebookTextBlock.style.color = blueShades[Math.floor(Math.random() * blueShades.length)];
-        notebookTextBlock.style.textDecoration = "none"; // Скидаємо "червону ручку" для нового зошита
+        const randomBlue = blueShades[Math.floor(Math.random() * blueShades.length)];
+        
+        notebookTextBlock.style.color = randomBlue;
+        notebookTextBlock.style.textDecoration = "none"; 
 
         const text = generatedResponses[studentId];
         notebookTextBlock.innerText = text || "Натисніть кнопку генерації.";
 
-        notebookTextBlock.style.color = blueShades[Math.floor(Math.random() * blueShades.length)];
-        // Це важливо: скидаємо примусовий колір попереднього редагування
-        document.execCommand('foreColor', false, notebookTextBlock.style.color);
-
-        // 4. Активний учень у списку
+        // --- 5. ОНОВЛЕННЯ ІНТЕРФЕЙСУ ---
         document.querySelectorAll('.student-item').forEach(item => item.classList.remove('active'));
         const el = document.getElementById(`student-${studentId}`);
         if(el) el.classList.add('active');
