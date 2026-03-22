@@ -76,6 +76,14 @@
     };
 
     firebase.initializeApp(firebaseConfig);
+
+    // ЗАХИСТ: Перевірка авторизації
+    firebase.auth().onAuthStateChanged((user) => {
+        if (!user) {
+            window.location.href = "login.html";
+        }
+    });
+    
     const database = firebase.database();
     
     let students = [];
