@@ -162,11 +162,21 @@
     window.onload = function() {
         const urlParams = new URLSearchParams(window.location.search);
         const subjectParam = urlParams.get('subject');
+        const studentIdParam = urlParams.get('studentId'); // Отримуємо ID учня з посилання
         
         if (subjectParam) {
             document.getElementById('subjectSelect').value = subjectParam;
-            // Чекаємо завантаження списку учнів перед генерацією
-            setTimeout(() => { generateClassResponses(); }, 1500); 
+
+            setTimeout(() => { 
+                generateClassResponses(); // Спочатку генеруємо роботи
+                
+                // Якщо в URL був ID учня — відкриваємо його зошит після генерації
+                if (studentIdParam) {
+                    setTimeout(() => {
+                        showStudentNotebook(studentIdParam);
+                    }, 500);
+                }
+            }, 1000);
         }
     }
 
