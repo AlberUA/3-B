@@ -249,16 +249,15 @@
         notebookTextBlock.innerText = text || "Натисніть кнопку генерації.";
     }
 
-    // 5. ЛОГІКА ШІ (ВИПРАВЛЕНО)
+    // 5. ЛОГІКА ШІ (ПОВНІСТЮ ВИПРАВЛЕНО)
     function getAIGeneratedResponse(subject, level, task) {
         const now = new Date();
         const dateStr = now.toLocaleDateString('uk-UA');
         const random = (arr) => arr[Math.floor(Math.random() * arr.length)];
         
-        // Залишаємо тільки технічні заголовки
         const intros = ["Домашня робота", "Домашнє завдання", "Робота вдома"];
     
-        // 1. ПАРСИНГ ПРИКЛАДІВ
+        // 1. ПАРСИНГ ПРИКЛАДІВ (Тільки для математики)
         let mathContent = "";
         if (subject === 'math') {
             const mathRegex = /(\d+[\+\-\*\/x:]\d+)/g; 
@@ -287,38 +286,26 @@
             }
         }
     
-        // 2. ФОРМУВАННЯ ЧИСТОГО ТЕКСТУ
+        // 2. ФОРМУВАННЯ ФІНАЛЬНОГО ТЕКСТУ
         const intro = random(intros);
     
+        // Логіка для МАТЕМАТИКИ
         if (subject === 'math') {
-            // Тільки дата, заголовок і приклади. Ніяких зайвих фраз.
             const body = mathContent || "Завдання виконано.";
             return `${dateStr}.\n${intro}.\n\n${body}`;
         }
     
-        // Для інших предметів (наприклад, мова) — просто переписане завдання або текст
+        // Логіка для ІНШИХ ПРЕДМЕТІВ
         if (level === 'excellent') {
-            return `${dateStr}.\n${intro}.\n\n${task}\n(Виконано без помилок)`;
+            return `${dateStr}.\n${intro}.\n\nЗавдання: ${task}\n\nТекст переписано охайно. Помилок не виявлено.`;
         }
         
         if (level === 'good') {
-            return `${dateStr}.\n${intro}.\n\n${task}`;
+            return `${dateStr}.\n${intro}.\n\nЗавдання: ${task}\n\nЯ старався, але міг десь помилитися.`;
         }
     
-        return `${dateStr}.\n${intro}.\n\nНе встиг дорахувати...`;
-    }
-    
-        // --- ЛОГІКА ДЛЯ ІНШИХ ПРЕДМЕТІВ (Українська мова тощо) ---
-        if (level === 'excellent') {
-            return `${dateStr}.\n${random(variations.intro)}.\n\nЗавдання: ${task}\n\nТекст переписано каліграфічно. Помилок не виявлено.\n\n${random(variations.closings)}`;
-        }
-    
-        if (level === 'good') {
-            return `${dateStr}.\nДомашня робота.\n\nЗавдання: ${task}\n\nЯ дуже старався, але міг десь помилитися в буквах.`;
-        }
-    
-        return `\nЯ не зрозумів завдання: "${task}".\nВибачте, Даріє Олександрівно.`;
-    }
+        return `${dateStr}.\n${intro}.\n\nЯ не зовсім зрозумів завдання: "${task}".`;
+    } // Кінець функції
 
     // 6. ОЦІНКА ТА ЗВУК
     window.sendGradeToJournal = function() {
