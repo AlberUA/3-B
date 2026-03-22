@@ -60,10 +60,19 @@
         .notebook-page::before {
             content: '';
             position: absolute;
-            top: 0; left: 4rem;
+            top: 0; right: 4rem;
             width: 2px; height: 100%;
             background: #e74c3c;
             opacity: 0.6;
+        }
+        
+        /* --- НОВИЙ СТИЛЬ: МАТЕМАТИКА (КЛІТИНКА) --- */
+        .notebook-page.math {
+            background-image: 
+                linear-gradient(#f0f0f0 1px, transparent 1px), /* Горизонтальні лінії */
+                linear-gradient(90deg, #f0f0f0 1px, transparent 1px); /* Вертикальні лінії */
+            background-size: 2rem 2rem; /* Розмір клітинки 2х2 см (або 2rem) */
+            background-position: left center;
         }
 
         .action-box { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
