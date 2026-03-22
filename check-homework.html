@@ -72,6 +72,38 @@
 
         /* Стікер для оцінки */
         .grade-sticker { display: none; position: absolute; top: 2rem; right: 2rem; padding: 10px 20px; background: #e74c3c; color: white; border-radius: 50%; font-size: 2em; font-weight: bold; transform: rotate(15deg); box-shadow: 2px 2px 5px rgba(0,0,0,0.2); z-index: 10;}
+
+        /* Різні типи почерку */
+        .handwriting-excellent { 
+            font-family: 'Segoe Script', 'Comic Sans MS', cursive; 
+            letter-spacing: 1px; 
+            word-spacing: 2px;
+        }
+        .handwriting-good { 
+            font-family: 'Comic Sans MS', cursive; 
+            transform: rotate(-0.5deg); 
+        }
+        .handwriting-needs_help { 
+            font-family: 'Cursive', sans-serif; 
+            letter-spacing: -1px; 
+            filter: blur(0.3px); /* Легке розмиття, ніби олівець */
+            transform: rotate(1deg);
+        }
+        
+        /* Ефекти брудного зошита */
+        .notebook-page.messy::after {
+            content: '';
+            position: absolute;
+            top: 20%; left: 70%;
+            width: 100px; height: 100px;
+            background: url('https://www.transparenttextures.com/patterns/coffee-stain.png');
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        
+        .notebook-page.perfect {
+            border-left: 5px solid #2ecc71;
+        }
     </style>
 </head>
 <body>
@@ -110,8 +142,7 @@
                 
                 <div class="notebook-page">
                     <div id="gradeSticker" class="grade-sticker">10</div>
-                    <div class="notebook-text" id="notebookText">
-                        </div>
+                    <div class="notebook-text" id="notebookText" contenteditable="true"></div>
                 </div>
 
                 <div class="action-box" style="background: #fdf2f2; padding: 15px; border-radius: 8px; border: 1px solid #fab1a0; margin-top: 20px;">
@@ -242,49 +273,69 @@
         });
     };
 
-    // 4. ВІДОБРАЖЕННЯ ЗОШИТА
+    // 4. ВІДОБРАЖЕННЯ ЗОШИТА (ВИПРАВЛЕНО)
     function showStudentNotebook(studentId) {
         currentSelectedStudentId = studentId;
-
         const subject = document.getElementById('subjectSelect').value;
-    
-        // --- НОВИЙ БЛОК: ЗАВАНТАЖЕННЯ АРХІВУ ---
+        const student = students.find(s => s.id === studentId);
+        
+        if (!student) return;
+
+        // 1. Оновлюємо архів (винесено в логіку всередині)
         const archiveList = document.getElementById('archiveList');
         const archiveContainer = document.getElementById('gradesArchive');
-        archiveList.innerHTML = ''; // Очищуємо старий список
+        archiveList.innerHTML = ''; 
         
         database.ref('grades_v2').once('value', (snapshot) => {
             const allGrades = snapshot.val() || {};
             let hasGrades = false;
-    
-            // Перевіряємо всі 12 можливих колонок для цього учня
             for (let i = 1; i <= 12; i++) {
                 const key = `${subject}_${studentId}_${i}`;
                 const gradeData = allGrades[key];
-    
                 if (gradeData) {
                     hasGrades = true;
-                    const gradeBox = document.createElement('div');
-                    
-                    // Визначаємо, що виводити (об'єкт чи стару цифру)
                     const val = typeof gradeData === 'object' ? gradeData.value : gradeData;
                     const comm = typeof gradeData === 'object' ? gradeData.comment : '';
                     const date = typeof gradeData === 'object' ? gradeData.date : 'Раніше';
-    
-                    gradeBox.style = `background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd; font-size: 0.9em; min-width: 60px; text-align: center;`;
-                    gradeBox.title = comm || "Без коментаря"; // Коментар при наведенні
-                    gradeBox.innerHTML = `
-                        <div style="color: #e74c3c; font-weight: bold; font-size: 1.2em;">${val}</div>
-                        <div style="font-size: 0.7em; color: #95a5a6;">${date}</div>
-                    `;
+
+                    const gradeBox = document.createElement('div');
+                    gradeBox.className = 'archive-item'; // Можна додати стиль в CSS
+                    gradeBox.style = `background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd; font-size: 0.9em; min-width: 60px; text-align: center; cursor: help;`;
+                    gradeBox.title = comm || "Без коментаря";
+                    gradeBox.innerHTML = `<div style="color: #e74c3c; font-weight: bold; font-size: 1.2em;">${val}</div>
+                                          <div style="font-size: 0.7em; color: #95a5a6;">${date}</div>`;
                     archiveList.appendChild(gradeBox);
                 }
             }
-    
             archiveContainer.style.display = hasGrades ? 'block' : 'none';
         });
-        
-        const student = students.find(s => s.id === studentId);
+
+        // 2. Візуальний стан зошита
+        const notebookPage = document.querySelector('.notebook-page');
+        const notebookTextBlock = document.getElementById('notebookText');
+
+        notebookPage.classList.remove('messy', 'perfect');
+        notebookTextBlock.classList.remove('handwriting-excellent', 'handwriting-good', 'handwriting-needs_help');
+
+        if (student.level === 'excellent') {
+            notebookPage.classList.add('perfect');
+            notebookTextBlock.classList.add('handwriting-excellent');
+        } else if (student.level === 'needs_help') {
+            notebookPage.classList.add('messy');
+            notebookTextBlock.classList.add('handwriting-needs_help');
+        } else {
+            notebookTextBlock.classList.add('handwriting-good');
+        }
+
+        // 3. Колір чорнила та текст
+        const blueShades = ['#2c3e50', '#000080', '#191970', '#1e3799'];
+        notebookTextBlock.style.color = blueShades[Math.floor(Math.random() * blueShades.length)];
+        notebookTextBlock.style.textDecoration = "none"; // Скидаємо "червону ручку" для нового зошита
+
+        const text = generatedResponses[studentId];
+        notebookTextBlock.innerText = text || "Натисніть кнопку генерації.";
+
+        // 4. Активний учень у списку
         document.querySelectorAll('.student-item').forEach(item => item.classList.remove('active'));
         const el = document.getElementById(`student-${studentId}`);
         if(el) el.classList.add('active');
@@ -292,15 +343,7 @@
         document.getElementById('emptyMsg').style.display = 'none';
         document.getElementById('notebookContainer').style.display = 'block';
         document.getElementById('gradeSticker').style.display = 'none';
-
         document.getElementById('currentStudentName').innerText = `${student.firstName} ${student.lastName}`;
-        
-        const blueShades = ['#2c3e50', '#000080', '#191970', '#0000ff'];
-        const notebookTextBlock = document.getElementById('notebookText');
-        notebookTextBlock.style.color = blueShades[Math.floor(Math.random() * blueShades.length)];
-
-        const text = generatedResponses[studentId];
-        notebookTextBlock.innerText = text || "Натисніть кнопку генерації.";
     }
 
     // 5. ЛОГІКА ШІ (ПОВНІСТЮ ВИПРАВЛЕНО)
@@ -412,6 +455,11 @@
             });
         });
     };
+    // Додаємо можливість писати "червоною ручкою"
+    document.getElementById('notebookText').addEventListener('input', function(e) {
+        // Весь текст, який вводить вчитель після завантаження, буде червоним
+        this.style.textDecoration = "underline wavy #e74c3c"; 
+    });
 </script>
 
 </body>
