@@ -63,7 +63,8 @@
                 <option value="eng">Англійська мова</option>
                 <option value="world">Я досліджую світ</option>
             </select>
-            <button onclick="saveGrades()">Зберегти зміни</button>
+            <button onclick="saveAllData()" style="background: #2ecc71;">Зберегти</button>
+            <button onclick="clearSubject()" style="background: #e74c3c;">Очистити предмет</button>
         </div>
     </div>
 
@@ -245,6 +246,36 @@
         initJournal();
         renderHomeworkTable(this.value);
     });
+
+    window.clearSubject = function() {
+        const subject = document.getElementById('subjectSelect').value;
+        const subjectName = document.getElementById('subjectSelect').options[document.getElementById('subjectSelect').selectedIndex].text;
+    
+        const confirmFirst = confirm(`Ви впевнені, що хочете видалити ВСІ оцінки та ДЗ з предмета "${subjectName}"?`);
+        if (confirmFirst) {
+            const confirmSecond = confirm("ДАНІ БУДЕ ВТРАЧЕНО НАЗАВЖДИ. Точно видалити?");
+            if (confirmSecond) {
+                const updates = {};
+                
+                // Очищаємо всі оцінки для цього предмета
+                // Ми проходимо по всіх інпутах на сторінці, щоб знайти потрібні ключі
+                document.querySelectorAll('.grade').forEach(input => {
+                    updates[`/grades_v2/${input.dataset.key}`] = "";
+                });
+    
+                // Очищаємо ДЗ для цього предмета
+                for (let i = 1; i <= 15; i++) {
+                    updates[`/homework_v2/${subject}_hw_${i}`] = "";
+                }
+    
+                database.ref().update(updates)
+                    .then(() => {
+                        alert(`Предмет "${subjectName}" успішно очищено!`);
+                    })
+                    .catch(err => alert('Помилка при очищенні: ' + err));
+            }
+        }
+    };
 </script>
 
 </body>
