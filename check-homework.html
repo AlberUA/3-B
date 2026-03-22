@@ -276,6 +276,10 @@
         const levelMap = { 'excellent': 'Відмінник', 'good': 'Хорошист', 'needs_help': 'Слабкий' };
         document.getElementById('currentStudentLevel').innerText = `Рівень: ${levelMap[student.level] || 'Невказано'}`;
 
+        // Вставте це всередині функції showStudentNotebook перед відображенням тексту
+        const blueShades = ['#2c3e50', '#000080', '#191970', '#0000ff']; // Різні сині відтінки
+        document.getElementById('notebookText').style.color = blueShades[Math.floor(Math.random() * blueShades.length)];
+
         // Отримуємо текст роботи
         const text = generatedResponses[studentId];
         const notebookTextBlock = document.getElementById('notebookText');
