@@ -145,6 +145,22 @@
             window.location.href = "login.html";
         }
     });
+
+    window.onload = function() {
+        // Код для зчитування предмета з URL-адреси
+        const urlParams = new URLSearchParams(window.location.search);
+        const subjectParam = urlParams.get('subject');
+        
+        if (subjectParam) {
+            const select = document.getElementById('subjectSelect');
+            select.value = subjectParam;
+            // Відразу запускаємо генерацію робіт для цього предмета
+            // (функція має бути викликана після того, як база завантажиться)
+            setTimeout(() => {
+                generateClassResponses();
+            }, 1000); 
+        }
+    }
     
     const database = firebase.database();
     
