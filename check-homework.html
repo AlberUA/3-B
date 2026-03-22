@@ -375,13 +375,22 @@
             const finalKey = `${subject}_${currentSelectedStudentId}_${targetColumn}`;
             database.ref(`grades_v2/${finalKey}`).set(gradeValue)
                 .then(() => {
+                    // ЕФЕКТ ПЕЧАТКИ ТА ЗВУК
+                    const stampAudio = new Audio('https://www.soundjay.com/communication/sounds/stamp-mount-1.mp3');
+                    stampAudio.play();
+                    
                     // Візуальний ефект: ставимо "печатку" на зошит
                     const sticker = document.getElementById('gradeSticker');
                     sticker.innerText = gradeValue;
                     sticker.style.display = 'block';
                     
-                    alert(`Оцінку ${gradeValue} поставлено учню в колонку №${targetColumn}!`);
-                    document.getElementById('quickGrade').value = ''; // Очищаємо поле
+                    // Додамо невелику анімацію появи оцінки
+                    sticker.style.transform = 'scale(2) rotate(15deg)';
+                    sticker.style.transition = '0.2s';
+                    setTimeout(() => { sticker.style.transform = 'scale(1) rotate(15deg)'; }, 100);
+        
+                    alert(`Готово! Оцінка ${gradeValue} у журналі.`);
+                    document.getElementById('quickGrade').value = '';
                 })
                 .catch(err => alert("Помилка запису: " + err));
         });
