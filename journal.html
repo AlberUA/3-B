@@ -45,6 +45,17 @@
         #hwTable td {
             padding: 5px;
         }
+
+        td[title] {
+            position: relative;
+            font-weight: bold;
+            border: 1px solid #eee;
+            transition: background 0.3s;
+        }
+        
+        td[title]:hover {
+            background-color: #f1f2f6;
+        }
     </style>
 </head>
 <body>
@@ -137,7 +148,6 @@
     const cols = 12;
 
     // СЛУХАЧІ ДАНИХ
-    
     studentsRef.on('value', (snapshot) => {
         const data = snapshot.val();
         students = [];
@@ -164,29 +174,47 @@
         const subject = document.getElementById('subjectSelect').value;
         const journalBody = document.getElementById('journalBody');
         const headerRow = document.getElementById('headerRow');
-
+    
         let headerHTML = '<th>№</th><th>Прізвище та Ім\'я</th>';
         for(let i=1; i<=cols; i++) headerHTML += `<th>${i}</th>`;
         headerHTML += '<th>Сер. бал</th>';
         headerRow.innerHTML = headerHTML;
-
+    
         journalBody.innerHTML = '';
         if(students.length === 0) return;
-
+    
         students.forEach((s, idx) => {
             let sum = 0, count = 0;
             let row = `<tr><td>${idx + 1}</td><td style="text-align:left"><strong>${s.lastName}</strong> ${s.firstName}</td>`;
             
             for(let i=1; i<=cols; i++) {
                 const key = `${subject}_${s.id}_${i}`;
-                const val = allGrades[key] || '';
-                if (val && !isNaN(val)) { sum += parseInt(val); count++; }
+                const rawVal = allGrades[key] || '';
                 
+                let displayVal = '';
+                let commentTip = '';
+    
+                // ПЕРЕВІРКА: Об'єкт чи рядок?
+                if (rawVal && typeof rawVal === 'object') {
+                    displayVal = rawVal.value; // Беремо саму оцінку
+                    commentTip = rawVal.comment ? `Коментар: ${rawVal.comment}` : '';
+                } else {
+                    displayVal = rawVal; // Старий формат (просто число)
+                }
+    
+                if (displayVal && !isNaN(displayVal)) { 
+                    sum += parseInt(displayVal); 
+                    count++; 
+                }
+                
+                // Додаємо title="${commentTip}", щоб бачити коментар при наведенні
                 row += `<td><input type="text" class="grade" 
                             data-student-id="${s.id}" 
                             data-key="${key}" 
                             oninput="updateAverage('${s.id}')"
-                            value="${val}" maxlength="2"></td>`;
+                            title="${commentTip}"
+                            value="${displayVal}" maxlength="2"
+                            style="${commentTip ? 'border-bottom: 2px solid #e17055;' : ''}"></td>`;
             }
             const avg = count > 0 ? (sum / count).toFixed(1) : '-';
             row += `<td id="avg-${s.id}" style="font-weight:bold; background:#f9f9f9;">${avg}</td></tr>`;
@@ -228,16 +256,29 @@
         const updates = {};
         
         document.querySelectorAll('.grade').forEach(input => {
-            updates[`/grades_v2/${input.dataset.key}`] = input.value;
+            const key = input.dataset.key;
+            const newVal = input.value;
+            const oldData = allGrades[key];
+    
+            // Якщо це був об'єкт з коментарем, оновлюємо тільки значення оцінки всередині
+            if (oldData && typeof oldData === 'object') {
+                updates[`/grades_v2/${key}`] = {
+                    ...oldData,
+                    value: newVal
+                };
+            } else {
+                // Якщо була просто цифра — зберігаємо як цифру
+                updates[`/grades_v2/${key}`] = newVal;
+            }
         });
-
+    
         document.querySelectorAll('.hw-input').forEach(input => {
             updates[`/homework_v2/${input.dataset.key}`] = input.value;
         });
-
+    
         database.ref().update(updates)
-            .then(() => alert('Всі дані (оцінки та ДЗ) успішно збережено!'))
-            .catch(err => alert('Помилка збереження: ' + err));
+            .then(() => alert('Дані збережено!'))
+            .catch(err => alert('Помилка: ' + err));
     };
 
     // Призначаємо ту саму функцію для кнопки "Зберегти зміни"
