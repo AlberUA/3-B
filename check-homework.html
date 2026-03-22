@@ -144,283 +144,160 @@
 
     firebase.initializeApp(firebaseConfig);
 
-    // ЗАХИСТ: Перевірка авторизації
     firebase.auth().onAuthStateChanged((user) => {
-        if (!user) {
-            window.location.href = "login.html";
-        }
+        if (!user) { window.location.href = "login.html"; }
     });
 
+    const database = firebase.database();
+    let students = [];
+    let generatedResponses = {}; 
+    let currentSelectedStudentId = null;
+
     window.onload = function() {
-        // Код для зчитування предмета з URL-адреси
         const urlParams = new URLSearchParams(window.location.search);
         const subjectParam = urlParams.get('subject');
         
         if (subjectParam) {
-            const select = document.getElementById('subjectSelect');
-            select.value = subjectParam;
-            // Відразу запускаємо генерацію робіт для цього предмета
-            // (функція має бути викликана після того, як база завантажиться)
-            setTimeout(() => {
-                generateClassResponses();
-            }, 1000); 
+            document.getElementById('subjectSelect').value = subjectParam;
+            // Чекаємо завантаження списку учнів перед генерацією
+            setTimeout(() => { generateClassResponses(); }, 1500); 
         }
     }
-    
-    const database = firebase.database();
-    
-    // Глобальні змінні
-    let students = [];
-    let generatedResponses = {}; // Сховище для згенерованих робіт
-    let currentSelectedStudentId = null;
 
-    // 1. ЗАВАНТАЖЕННЯ УЧНІВ ПРИ ЗАВАНТАЖЕННІ СТОРІНКИ
-    database.ref('students_v2').once('value', (snapshot) => {
+    // 1. ЗАВАНТАЖЕННЯ УЧНІВ
+    database.ref('students_v2').on('value', (snapshot) => {
         const data = snapshot.val();
         students = [];
         if (data) {
             Object.keys(data).forEach(key => {
                 students.push({ id: key, ...data[key] });
             });
-            // Сортування
             students.sort((a, b) => a.lastName.localeCompare(b.lastName, 'uk'));
             renderStudentList();
         }
     });
 
-    // 2. РЕНДЕР СПИСКУ УЧНІВ
+    // 2. РЕНДЕР СПИСКУ
     function renderStudentList() {
         const list = document.getElementById('studentList');
         list.innerHTML = '';
-        
         if (students.length === 0) {
-            list.innerHTML = '<p style="color:#95a5a6;">Спершу додайте учнів у розділі "Реєстрація"</p>';
+            list.innerHTML = '<p style="color:#95a5a6;">Спершу додайте учнів у "Реєстрації"</p>';
             return;
         }
-
         students.forEach(s => {
             const item = document.createElement('div');
             item.className = 'student-item';
             item.id = `student-${s.id}`;
             item.onclick = () => showStudentNotebook(s.id);
-            
-            // Відображаємо рівень знань
-            const levelMap = {
-                'excellent': 'Відмінник',
-                'good': 'Хорошист',
-                'needs_help': 'Слабкий'
-            };
-            const levelText = levelMap[s.level] || 'Невказано';
-            
+            const levelMap = { 'excellent': 'Відмінник', 'good': 'Хорошист', 'needs_help': 'Слабкий' };
             item.innerHTML = `
                 <div class="student-name"><strong>${s.lastName}</strong> ${s.firstName}</div>
-                <div class="student-level">${levelText}</div>
+                <div class="student-level">${levelMap[s.level] || 'Невказано'}</div>
             `;
             list.appendChild(item);
         });
     }
 
-    // 3. ГОЛОВНА ФУНКЦІЯ: ГЕНЕРАЦІЯ ВІДПОВІДЕЙ КЛАСУ
+    // 3. ГЕНЕРАЦІЯ (window. для глобального доступу)
     window.generateClassResponses = function() {
-        if (students.length === 0) { alert('Немає учнів для генерації.'); return; }
-        
+        if (students.length === 0) return;
         const subject = document.getElementById('subjectSelect').value;
-        generatedResponses = {}; // Очищаємо попередні
         
-        // Імітація: отримуємо тему ДЗ з Журналу (останній урок)
         database.ref('homework_v2').once('value', (snapshot) => {
             const allHomework = snapshot.val() || {};
-            let lastTaskDescription = "Робота над завданням з підручника."; // Дефолтне завдання
-
-            // Шукаємо останнє введене ДЗ
+            let lastTaskDescription = "Робота над завданням з підручника.";
             for (let i = 1; i <= 15; i++) {
                 const task = allHomework[`${subject}_hw_${i}`];
                 if (task && task.trim() !== "") { lastTaskDescription = task; }
             }
 
-            // Генеруємо відповідь для КОЖНОГО учня
             students.forEach(s => {
-                const response = getAIGeneratedResponse(subject, s.level, lastTaskDescription);
-                generatedResponses[s.id] = response;
+                generatedResponses[s.id] = getAIGeneratedResponse(subject, s.level, lastTaskDescription);
             });
 
-            alert(`Роботи учнів з предмета "${subject}" згенеровано! Оберіть учня для перевірки.`);
-            
-            // Якщо учень вже був вибраний — оновлюємо його зошит
-            if (currentSelectedStudentId) {
-                showStudentNotebook(currentSelectedStudentId);
-            } else {
-                // Показуємо порожнє повідомлення
-                document.getElementById('emptyMsg').style.display = 'block';
-                document.getElementById('notebookContainer').style.display = 'none';
-            }
+            alert(`Роботи з предмета згенеровано!`);
+            if (currentSelectedStudentId) showStudentNotebook(currentSelectedStudentId);
         });
     };
 
-    // 4. ВІДОБРАЖЕННЯ ЗОШИТА УЧНЯ
+    // 4. ВІДОБРАЖЕННЯ ЗОШИТА
     function showStudentNotebook(studentId) {
         currentSelectedStudentId = studentId;
         const student = students.find(s => s.id === studentId);
-        
-        // Підсвічуємо вибраного учня
         document.querySelectorAll('.student-item').forEach(item => item.classList.remove('active'));
-        document.getElementById(`student-${studentId}`).classList.add('active');
-        
-        // Ховаємо порожнє повідомлення
+        const el = document.getElementById(`student-${studentId}`);
+        if(el) el.classList.add('active');
+
         document.getElementById('emptyMsg').style.display = 'none';
         document.getElementById('notebookContainer').style.display = 'block';
-        document.getElementById('gradeSticker').style.display = 'none'; // Сховуємо стару оцінку
+        document.getElementById('gradeSticker').style.display = 'none';
 
-        // Заповнюємо дані
         document.getElementById('currentStudentName').innerText = `${student.firstName} ${student.lastName}`;
-        const levelMap = { 'excellent': 'Відмінник', 'good': 'Хорошист', 'needs_help': 'Слабкий' };
-        document.getElementById('currentStudentLevel').innerText = `Рівень: ${levelMap[student.level] || 'Невказано'}`;
-
-        // Вставте це всередині функції showStudentNotebook перед відображенням тексту
-        const blueShades = ['#2c3e50', '#000080', '#191970', '#0000ff']; // Різні сині відтінки
-        document.getElementById('notebookText').style.color = blueShades[Math.floor(Math.random() * blueShades.length)];
-
-        // Отримуємо текст роботи
-        const text = generatedResponses[studentId];
-        const notebookTextBlock = document.getElementById('notebookText');
         
-        if (text) {
-            notebookTextBlock.innerText = text;
-            notebookTextBlock.style.color = 'var(--text-hand)';
-        } else {
-            notebookTextBlock.innerText = "Учень ще не здав роботу (Натисніть 'Отримати роботи учнів').";
-            notebookTextBlock.style.color = '#95a5a6';
-        }
+        const blueShades = ['#2c3e50', '#000080', '#191970', '#0000ff'];
+        const notebookTextBlock = document.getElementById('notebookText');
+        notebookTextBlock.style.color = blueShades[Math.floor(Math.random() * blueShades.length)];
+
+        const text = generatedResponses[studentId];
+        notebookTextBlock.innerText = text || "Натисніть кнопку генерації.";
     }
 
-    // 5. ЛОГІКА ІМІТАЦІЇ (База знань ШІ-тренажера)
+    // 5. ЛОГІКА ШІ (ВИПРАВЛЕНО)
     function getAIGeneratedResponse(subject, level, task) {
         const now = new Date();
         const dateStr = now.toLocaleDateString('uk-UA');
-        
-        // Словник варіацій для відмінників
-        const variations = {
-            intro: ["Домашня робота", "Домашнє завдання", "Дистанційна робота", "Робота вдома"],
-            math_phrases: [
-                "Приклади розв'язано правильно.", 
-                "Завдання виконано за алгоритмом.", 
-                "Всі обчислення перевірено.",
-                "Результат отримано вірно."
-            ],
-            ukr_phrases: [
-                "Текст переписано без помилок.", 
-                "Вправа виконана каліграфічно.", 
-                "Всі розділові знаки на місцях.",
-                "Зверніть увагу на охайність письма."
-            ],
-            closings: ["Дякую за увагу!", "З повагою, учень.", "Кінець роботи.", "Готово."]
-        };
-    
-        // Функція для вибору випадкового елемента
         const random = (arr) => arr[Math.floor(Math.random() * arr.length)];
-    
-        // Генерація тексту для ВІДМІННИКА (щоразу інший)
+        
+        const variations = {
+            intro: ["Домашня робота", "Домашнє завдання", "Робота вдома"],
+            math_phrases: ["Все правильно.", "Завдання виконано.", "Перевірено."],
+            ukr_phrases: ["Каліграфічно.", "Без помилок.", "Охайно."],
+            closings: ["Дякую!", "Кінець.", "Готово."]
+        };
+
         if (level === 'excellent') {
             const intro = random(variations.intro);
             const closing = random(variations.closings);
-            
             if (subject === 'math') {
-                const mathP = random(variations.math_phrases);
-                return `${dateStr}.\n${intro}.\n\nЗавдання: ${task}\n\n1) 15 + 5 = 20\n2) 30 - 10 = 20\n${mathP}\n\n${closing}`;
-            } 
-            
-            if (subject === 'ukr') {
-                const ukrP = random(variations.ukr_phrases);
-                return `${dateStr}.\n${intro}.\n\nТема: ${task}.\n\nУкраїна — моя рідна Батьківщина. Я люблю рідну мову.\n${ukrP}\n\n${closing}`;
+                return `${dateStr}.\n${intro}.\n\nЗавдання: ${task}\n\n1) 10+10=20\n2) 20+20=40\n${random(variations.math_phrases)}\n\n${closing}`;
             }
+            return `${dateStr}.\n${intro}.\n\nВправа: ${task}.\nТекст виконано ${random(variations.ukr_phrases)}\n\n${closing}`;
         }
-    
-        // Для ХОРОШИСТІВ (додаємо випадкову помилку в випадковому місці)
+
         if (level === 'good') {
-            const typo = Math.random() > 0.5 ? "математіка" : "завданя";
-            return `${dateStr}.\nДомашня робота.\n\nЗавдання: ${task}\n\nВідповідь майже правильна, але є помилка у слові ${typo}.`;
+            return `${dateStr}.\nДомашня робота.\n\nЗавдання: ${task}\n\nТут є маленька помилка, але я стараюся!`;
         }
-    
-        // Для СЛАБКИХ (мінімум тексту, випадкова відсутність завдання)
+
         if (level === 'needs_help') {
-            const excuses = ["Я забув підручник", "Дуже складно", "Не встиг дорахувати", "..."];
-            return `\n${random(excuses)}.\n5 + 5 = ${Math.floor(Math.random() * 50)}`;
+            const excuses = ["Складно...", "Не встиг", "Забув"];
+            return `\n${random(excuses)}.\nЯ не зробив завдання.`;
         }
-    
         return "Роботу не знайдено.";
     }
 
-        // Беремо шаблон або порожній рядок, якщо щось пішло не так
-        const responseTemplate = baseResponses[subject] ? baseResponses[subject][level] : "Роботу не виконано.";
-        
-        // Трохи випадковості (бо навіть відмінник може забути дату)
-        if (level === 'excellent' && Math.random() < 0.1) {
-            return responseTemplate.replace(dateStr, ""); // Видаляємо дату
-        }
-        
-        return responseTemplate;
-    }
-
-    // 6. ПЕРЕХІД ДО ЖУРНАЛУ ДЛЯ ВИСТАВЛЕННЯ ОЦІНКИ
-    window.openJournalToGrade = function() {
-        if (!currentSelectedStudentId) return;
-        const subject = document.getElementById('subjectSelect').value;
-        // Переходимо до журналу, передаючи параметри в URL
-        window.location.href = `journal.html?studentId=${currentSelectedStudentId}&subject=${subject}`;
-    };
-
-    // При зміні предмета ховаємо зошит
-    document.getElementById('subjectSelect').addEventListener('change', () => {
-        generatedResponses = {};
-        document.getElementById('emptyMsg').style.display = 'block';
-        document.getElementById('notebookContainer').style.display = 'none';
-        document.querySelectorAll('.student-item').forEach(item => item.classList.remove('active'));
-    });
-
-    // Функція автоматичного запису в журнал
+    // 6. ОЦІНКА ТА ЗВУК
     window.sendGradeToJournal = function() {
         const gradeValue = document.getElementById('quickGrade').value;
         const subject = document.getElementById('subjectSelect').value;
-        
-        if (!currentSelectedStudentId) { alert("Оберіть учня!"); return; }
-        if (!gradeValue || gradeValue < 1 || gradeValue > 12) { alert("Введіть коректну оцінку (1-12)"); return; }
-    
-        // 1. Отримуємо всі поточні оцінки, щоб знайти вільне місце
+        if (!currentSelectedStudentId || !gradeValue) return;
+
         database.ref('grades_v2').once('value', (snapshot) => {
             const allGrades = snapshot.val() || {};
-            let targetColumn = 1;
-    
-            // 2. Шукаємо першу порожню колонку (від 1 до 12)
+            let targetCol = 1;
             for (let i = 1; i <= 12; i++) {
-                const key = `${subject}_${currentSelectedStudentId}_${i}`;
-                if (!allGrades[key] || allGrades[key] === "") {
-                    targetColumn = i;
-                    break;
+                if (!allGrades[`${subject}_${currentSelectedStudentId}_${i}`]) {
+                    targetCol = i; break;
                 }
             }
-    
-            // 3. Записуємо оцінку в знайдений ключ
-            const finalKey = `${subject}_${currentSelectedStudentId}_${targetColumn}`;
-            database.ref(`grades_v2/${finalKey}`).set(gradeValue)
-                .then(() => {
-                    // ЕФЕКТ ПЕЧАТКИ ТА ЗВУК
-                    const stampAudio = new Audio('https://www.soundjay.com/communication/sounds/stamp-mount-1.mp3');
-                    stampAudio.play();
-                    
-                    // Візуальний ефект: ставимо "печатку" на зошит
-                    const sticker = document.getElementById('gradeSticker');
-                    sticker.innerText = gradeValue;
-                    sticker.style.display = 'block';
-                    
-                    // Додамо невелику анімацію появи оцінки
-                    sticker.style.transform = 'scale(2) rotate(15deg)';
-                    sticker.style.transition = '0.2s';
-                    setTimeout(() => { sticker.style.transform = 'scale(1) rotate(15deg)'; }, 100);
-        
-                    alert(`Готово! Оцінка ${gradeValue} у журналі.`);
-                    document.getElementById('quickGrade').value = '';
-                })
-                .catch(err => alert("Помилка запису: " + err));
+            const key = `${subject}_${currentSelectedStudentId}_${targetCol}`;
+            database.ref(`grades_v2/${key}`).set(gradeValue).then(() => {
+                new Audio('https://www.soundjay.com/communication/sounds/stamp-mount-1.mp3').play();
+                const s = document.getElementById('gradeSticker');
+                s.innerText = gradeValue;
+                s.style.display = 'block';
+                document.getElementById('quickGrade').value = '';
+            });
         });
     };
 </script>
