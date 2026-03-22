@@ -115,7 +115,12 @@
                 </div>
 
                 <div class="action-box">
-                    <button class="btn-grade" onclick="openJournalToGrade()">Перейти до Журналу</button>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <label style="font-weight: bold;">Оцінка за роботу:</label>
+                        <input type="number" id="quickGrade" min="1" max="12" style="width: 50px; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+                        <button class="btn-grade" onclick="sendGradeToJournal()">✅ Поставити в журнал</button>
+                    </div>
+                    <button onclick="window.location.href='journal.html'" style="background: #95a5a6;">До журналу →</button>
                 </div>
             </div>
             
@@ -343,6 +348,44 @@
         document.getElementById('notebookContainer').style.display = 'none';
         document.querySelectorAll('.student-item').forEach(item => item.classList.remove('active'));
     });
+
+    // Функція автоматичного запису в журнал
+    window.sendGradeToJournal = function() {
+        const gradeValue = document.getElementById('quickGrade').value;
+        const subject = document.getElementById('subjectSelect').value;
+        
+        if (!currentSelectedStudentId) { alert("Оберіть учня!"); return; }
+        if (!gradeValue || gradeValue < 1 || gradeValue > 12) { alert("Введіть коректну оцінку (1-12)"); return; }
+    
+        // 1. Отримуємо всі поточні оцінки, щоб знайти вільне місце
+        database.ref('grades_v2').once('value', (snapshot) => {
+            const allGrades = snapshot.val() || {};
+            let targetColumn = 1;
+    
+            // 2. Шукаємо першу порожню колонку (від 1 до 12)
+            for (let i = 1; i <= 12; i++) {
+                const key = `${subject}_${currentSelectedStudentId}_${i}`;
+                if (!allGrades[key] || allGrades[key] === "") {
+                    targetColumn = i;
+                    break;
+                }
+            }
+    
+            // 3. Записуємо оцінку в знайдений ключ
+            const finalKey = `${subject}_${currentSelectedStudentId}_${targetColumn}`;
+            database.ref(`grades_v2/${finalKey}`).set(gradeValue)
+                .then(() => {
+                    // Візуальний ефект: ставимо "печатку" на зошит
+                    const sticker = document.getElementById('gradeSticker');
+                    sticker.innerText = gradeValue;
+                    sticker.style.display = 'block';
+                    
+                    alert(`Оцінку ${gradeValue} поставлено учню в колонку №${targetColumn}!`);
+                    document.getElementById('quickGrade').value = ''; // Очищаємо поле
+                })
+                .catch(err => alert("Помилка запису: " + err));
+        });
+    };
 </script>
 
 </body>
