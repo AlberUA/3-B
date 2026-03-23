@@ -293,7 +293,7 @@
                 console.log(`Учень ${s.lastName}: базовий ${s.level} -> сьогодні пише як ${currentEffort}`);
 
                 generatedResponses[s.id] = {
-                    text: getAIGeneratedResponse(subject, currentEffort, lastTaskDescription),
+                    text: getAIGeneratedResponse(subject, currentEffort, lastTaskDescription, s),
                     tempLevel: currentEffort
                 };
             });
