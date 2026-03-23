@@ -374,76 +374,76 @@
         document.getElementById('currentStudentName').innerText = `${student.firstName} ${student.lastName}`;
     }
     
-    // 5. ГНУЧКА ЛОГІКА ШІ (ФІКС ВІКУ ТА ПРЕДМЕТІВ)
+    // 5. УНІВЕРСАЛЬНА ЛОГІКА: ТЕКСТ АБО ОЦІНКА
     function getAIGeneratedResponse(subject, level, task, studentObj) {
         const now = new Date();
         const dateStr = now.toLocaleDateString('uk-UA');
         const random = (arr) => arr[Math.floor(Math.random() * arr.length)];
-        
         const sub = subject ? subject.toLowerCase() : '';
     
-        // --- ЛОГІКА ПОШУКУ АКТУАЛЬНИХ ДАНИХ УЧНЯ ---
-        // Шукаємо учня: спочатку з переданого об'єкта, потім за ID
+        // --- ПОШУК ДАНИХ УЧНЯ (ФІКС ВІКУ) ---
         const s = studentObj || students.find(st => st.id === currentSelectedStudentId);
+        const name = (s && s.firstName) ? s.firstName : "Учень";
         
-        const name = (s && s.firstName) ? s.firstName : "I";
-        
-        // ПЕРЕВІРКА ВІКУ: пробуємо всі можливі назви полів (age, userAge, studentAge)
-        let age = 9; // Значення за замовчуванням
+        // Шукаємо вік у всіх можливих полях бази
+        let age = 9; 
         if (s) {
-            age = s.age || s.userAge || s.studentAge || 9;
+            let rawAge = s.age || s.userAge || s.years || s.studentAge || s['вік'] || 9;
+            age = (typeof rawAge === 'string') ? (parseInt(rawAge.match(/\d+/)) || 9) : rawAge;
         }
     
-        // --- 1. АНГЛІЙСЬКА МОВА ---
-        if (sub === 'english' || sub === 'eng' || sub === 'англійська') {
-            const topics = [
-                `Hello! My name is ${name}. I am ${age} years old. I have a big family. I love my mother and father.`,
-                `Hi! I am ${name}. I am ${age}. My favourite color is blue. I like yellow sun and green grass.`,
-                `Hello! My name is ${name}. I am ${age} years old. I like to swim and jump. I have a funny dog.`,
-                `Hi! My name is ${name}. I am ${age}. I like apples and bananas. I like pizza too.`
-            ];
+        // --- ПЕРЕВІРКА: ГЕНЕРУЄМО ТЕКСТ ЧИ ПРОСТО ОЦІНКУ? ---
+        // Якщо в завданні є слова "оцінка", "бал" або предмет - Фізкультура/ЯДС/Читання без тексту
+        const isGradingOnly = task.toLowerCase().includes('оцінка') || 
+                             task.toLowerCase().includes('бал') || 
+                             ['pe', 'япс', 'ядс', 'reading', 'art'].includes(sub);
     
-            let fullText = random(topics);
+        if (isGradingOnly) {
+            let mark = 12;
+            let feedback = "";
     
             if (level === 'excellent') {
-                return `${dateStr}.\nHomework.\n\n${fullText}`;
+                mark = random([10, 11, 12]);
+                feedback = random(["Відмінно!", "Чудова робота на уроці.", "Молодець, дуже активно!", "Високий рівень знань."]);
             } else if (level === 'good') {
-                // Типові помилки для 2-4 класу
-                fullText = fullText.replace('I am', 'I is').replace('favourite', 'favorit').replace('mother', 'muther');
-                return `${dateStr}.\nHomework.\n\n${fullText}`;
+                mark = random([7, 8, 9]);
+                feedback = random(["Добре, але будь уважнішим.", "Гарна відповідь.", "Старайся більше.", "Достатній рівень."]);
             } else {
-                // Слабкий рівень (без дієслів, маленькі літери)
-                return `${dateStr}.\nHomework.\n\nmy name ${name}. i ${age} old. i love mami. i like blue color.`;
+                mark = random([4, 5, 6]);
+                feedback = random(["Потрібно краще готуватися.", "Сьогодні слабенько.", "Читай уважніше завдання.", "Спробуй ще раз."]);
             }
+    
+            return `${dateStr}.\nОцінювання (${subject}).\n\nРезультат: ${mark} балів.\nКоментар: ${feedback}`;
         }
     
-        // --- 2. МАТЕМАТИКА ---
-        if (sub === 'math' || sub === 'математика') {
-            let mathContent = "";
+        // --- ЯКЩО ПОТРІБЕН ТЕКСТ (АНГЛІЙСЬКА, МАТЕМАТИКА ТА ІНШЕ) ---
+        
+        // Англійська (з реальним віком)
+        if (sub === 'english' || sub === 'eng') {
+            const engText = random([
+                `Hello! My name is ${name}. I am ${age} years old. I love my family.`,
+                `Hi! I am ${name}. I am ${age}. My favourite color is blue.`
+            ]);
+            if (level === 'excellent') return `${dateStr}.\nHomework.\n\n${engText}`;
+            return `${dateStr}.\nHomework.\n\nmy name ${name}. i ${age} old.`;
+        }
+    
+        // Математика
+        if (sub === 'math') {
             const mathRegex = /(\d+[\+\-\*\/x:]\d+)/g; 
-            const foundExamples = task.match(mathRegex);
-            if (foundExamples) {
-                foundExamples.forEach((ex, i) => {
-                    try {
-                        let res = eval(ex.replace(':', '/').replace('x', '*'));
-                        if (level === 'excellent') mathContent += `${i+1}) ${ex} = ${res}\n`;
-                        else if (level === 'good') mathContent += `${i+1}) ${ex} = ${Math.random() > 0.8 ? res + 1 : res}\n`;
-                        else mathContent += `${i+1}) ${ex} = ${Math.floor(Math.random()*50)}\n`;
-                    } catch(e) { mathContent += `${i+1}) ${ex} = ?\n`; }
+            const found = task.match(mathRegex);
+            let content = "";
+            if (found) {
+                found.forEach((ex, i) => {
+                    let res = eval(ex.replace(':', '/').replace('x', '*'));
+                    content += `${i+1}) ${ex} = ${level==='excellent' ? res : res+1}\n`;
                 });
             }
-            return `${dateStr}.\nДомашня робота.\n\n${mathContent || "Приклади розв'язано."}`;
+            return `${dateStr}.\nДомашня робота.\n\n${content || "Приклади розв'язано."}`;
         }
     
-        // --- 3. УКРАЇНСЬКА МОВА ---
-        if (sub === 'ukr' || sub === 'укр' || sub === 'reading') {
-            const bank = ["Маленьке кошеня грається м'ячиком.", "Сьогодні світить лагідне сонечко.", "Ми з татом побудували вежу."];
-            let selected = [...bank].sort(() => 0.5 - Math.random()).slice(0, 2);
-            if (level === 'excellent') return `${dateStr}.\nДомашня робота.\n\n${selected.join('\n')}`;
-            return `${dateStr}.\nВправа 14.\n\n${selected[0].toLowerCase().replace(' ', '')}\nя не встиг...`;
-        }
-    
-        return `${dateStr}.\nДомашнє завдання.\n\nЗавдання: ${task}\n(Виконано)`;
+        // Запасний варіант для всього іншого
+        return `${dateStr}.\nДомашня робота.\n\nЗавдання виконано на рівні: ${level}.`;
     }
 
     // 6. ОЦІНКА ТА ЗВУК
