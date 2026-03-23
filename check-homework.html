@@ -365,64 +365,70 @@
         document.getElementById('gradeSticker').style.display = 'none';
         document.getElementById('currentStudentName').innerText = `${student.firstName} ${student.lastName}`;
     }
-
-    // 5. ЛОГІКА ШІ (ПОВНІСТЮ ВИПРАВЛЕНО)
+    
+    // 5. РОЗШИРЕНА ЛОГІКА ШІ (ВЕЛИКИЙ БАНК РЕЧЕНЬ)
     function getAIGeneratedResponse(subject, level, task) {
         const now = new Date();
         const dateStr = now.toLocaleDateString('uk-UA');
         const random = (arr) => arr[Math.floor(Math.random() * arr.length)];
-        
-        const intros = ["Домашня робота", "Домашнє завдання", "Робота вдома"];
-    
-        // 1. ПАРСИНГ ПРИКЛАДІВ (Тільки для математики)
-        let mathContent = "";
+        const intros = ["Домашня робота", "Домашнє завдання", "Вправа 14"];
+        const intro = random(intros);
+
+        // --- ЛОГІКА ДЛЯ МАТЕМАТИКИ (без змін) ---
         if (subject === 'math') {
+            let mathContent = "";
             const mathRegex = /(\d+[\+\-\*\/x:]\d+)/g; 
             const foundExamples = task.match(mathRegex);
-    
-            if (foundExamples && foundExamples.length > 0) {
-                foundExamples.forEach((example, index) => {
+            if (foundExamples) {
+                foundExamples.forEach((ex, i) => {
                     try {
-                        let cleanExample = example.replace(':', '/').replace('x', '*');
-                        let result = eval(cleanExample); 
-    
-                        if (level === 'excellent') {
-                            mathContent += `${index + 1}) ${example} = ${result}\n`;
-                        } else if (level === 'good') {
-                            // Помилка з шансом 20%
-                            let finalResult = (Math.random() > 0.8) ? result + 1 : result;
-                            mathContent += `${index + 1}) ${example} = ${finalResult}\n`;
-                        } else {
-                            // Слабкий учень пише випадково
-                            mathContent += `${index + 1}) ${example} = ${Math.floor(Math.random() * 50)}\n`;
-                        }
-                    } catch (e) {
-                        mathContent += `${index + 1}) ${example} = ?\n`;
-                    }
+                        let res = eval(ex.replace(':', '/').replace('x', '*'));
+                        if (level === 'excellent') mathContent += `${i+1}) ${ex} = ${res}\n`;
+                        else if (level === 'good') mathContent += `${i+1}) ${ex} = ${Math.random() > 0.8 ? res + 1 : res}\n`;
+                        else mathContent += `${i+1}) ${ex} = ${Math.floor(Math.random()*50)}\n`;
+                    } catch(e) { mathContent += `${i+1}) ${ex} = ?\n`; }
                 });
             }
+            return `${dateStr}.\n${intro}.\n\n${mathContent || "Приклади розв'язано."}`;
         }
-    
-        // 2. ФОРМУВАННЯ ФІНАЛЬНОГО ТЕКСТУ
-        const intro = random(intros);
-    
-        // Логіка для МАТЕМАТИКИ
-        if (subject === 'math') {
-            const body = mathContent || "Завдання виконано.";
-            return `${dateStr}.\n${intro}.\n\n${body}`;
+
+        // --- ВЕЛИКИЙ БАНК РЕЧЕНЬ ДЛЯ УКР. МОВИ ---
+        const bank = [
+            "Маленьке кошеня грається м'ячиком.", "Сьогодні світить лагідне сонечко.",
+            "Ми з татом побудували високу вежу.", "У лісі ростуть білі гриби.",
+            "Мама приготувала смачний борщ.", "Весняний вітер гойдає дерева.",
+            "На небі пливуть пухнасті хмари.", "Моя сестра малює красиву картину.",
+            "Діти весело бігають по зеленій траві.", "На столі стоїть велика ваза.",
+            "Україна — це моя рідна земля.", "Золота осінь принесла багатий урожай.",
+            "У річці плаває срібляста рибка.", "Ми купили стиглі червоні яблука.",
+            "Лісові квіти пахнуть медом.", "У школі я знайшов вірного друга.",
+            "Дідусь читає цікаву книжку.", "Бабуся спекла запашні пиріжки."
+        ];
+
+        if (subject === 'ukr' || subject === 'reading') {
+            // Перемішуємо банк і беремо 3 речення
+            let selected = [...bank].sort(() => 0.5 - Math.random()).slice(0, 3);
+            
+            if (level === 'excellent') {
+                // Все чисто
+                return `${dateStr}.\n${intro}.\n\n${selected.join('\n')}`;
+            } 
+            else if (level === 'good') {
+                // Робимо 1-2 дрібні помилки
+                selected[1] = selected[1].replace('смачний', 'смашний').replace('світить', 'світитт');
+                return `${dateStr}.\n${intro}.\n\n${selected.join('\n')}`;
+            } 
+            else {
+                // Слабкий учень: помилки в кожному реченні + погане оформлення
+                let messyWork = selected.slice(0, 2).map(s => 
+                    s.toLowerCase().replace(' ', '').replace('я', 'а').replace('и', 'е')
+                );
+                return `${dateStr}.\n${intro}.\n\n${messyWork.join('\n')}\nя не встиг...`;
+            }
         }
-    
-        // Логіка для ІНШИХ ПРЕДМЕТІВ
-        if (level === 'excellent') {
-            return `${dateStr}.\n${intro}.\n\nЗавдання: ${task}\n\nТекст переписано охайно. Помилок не виявлено.`;
-        }
-        
-        if (level === 'good') {
-            return `${dateStr}.\n${intro}.\n\nЗавдання: ${task}\n\nЯ старався, але міг десь помилитися.`;
-        }
-    
-        return `${dateStr}.\n${intro}.\n\nЯ не зовсім зрозумів завдання: "${task}".`;
-    } // Кінець функції
+
+        return `${dateStr}.\n${intro}.\n\nЗавдання: ${task}\n(Роботу виконано)`;
+    }
 
     // 6. ОЦІНКА ТА ЗВУК
     window.sendGradeToJournal = function() {
