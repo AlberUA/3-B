@@ -195,8 +195,17 @@
         let hasData = false;
     
         for(let i=1; i<=12; i++) {
+            // Всередині циклу for(let i=1; i<=12; i++) у файлі прогресу:
             const key = `${subject}_${studentId}_${i}`;
-            const val = allGrades[key];
+            const rawVal = allGrades[key];
+            let val = null;
+            
+            if (rawVal && typeof rawVal === 'object') {
+                val = rawVal.value;
+            } else {
+                val = rawVal;
+            }
+            
             labelsArray.push(`${i}`);
             if (val && !isNaN(val)) {
                 gradesArray.push(parseInt(val));
