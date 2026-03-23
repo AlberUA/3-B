@@ -374,15 +374,18 @@
         document.getElementById('currentStudentName').innerText = `${student.firstName} ${student.lastName}`;
     }
     
-    // 5. РОЗШИРЕНА ЛОГІКА ШІ (ВЕЛИКИЙ БАНК РЕЧЕНЬ)
-    function getAIGeneratedResponse(subject, level, task) {
+    // 5. ПОВНІСТЮ ОНОВЛЕНА ЛОГІКА ШІ (УСІ ПРЕДМЕТИ ТА РАНДОМНІ ТЕМИ)
+    function getAIGeneratedResponse(subject, level, task, studentObj) {
         const now = new Date();
         const dateStr = now.toLocaleDateString('uk-UA');
         const random = (arr) => arr[Math.floor(Math.random() * arr.length)];
-        const intros = ["Домашня робота", "Домашнє завдання", "Вправа 14"];
-        const intro = random(intros);
-
-        // --- ЛОГІКА ДЛЯ МАТЕМАТИКИ (без змін) ---
+        
+        // Визначаємо заголовок (для англійської — англійською)
+        const intro = (subject === 'english') 
+            ? random(["Homework", "My English Work", "Classwork"])
+            : random(["Домашня робота", "Домашнє завдання", "Вправа 14"]);
+    
+        // --- 1. МАТЕМАТИКА ---
         if (subject === 'math') {
             let mathContent = "";
             const mathRegex = /(\d+[\+\-\*\/x:]\d+)/g; 
@@ -399,80 +402,62 @@
             }
             return `${dateStr}.\n${intro}.\n\n${mathContent || "Приклади розв'язано."}`;
         }
-
-        // --- ВЕЛИКИЙ БАНК РЕЧЕНЬ ДЛЯ УКР. МОВИ ---
-        const bank = [
-            "Маленьке кошеня грається м'ячиком.", "Сьогодні світить лагідне сонечко.",
-            "Ми з татом побудували високу вежу.", "У лісі ростуть білі гриби.",
-            "Мама приготувала смачний борщ.", "Весняний вітер гойдає дерева.",
-            "На небі пливуть пухнасті хмари.", "Моя сестра малює красиву картину.",
-            "Діти весело бігають по зеленій траві.", "На столі стоїть велика ваза.",
-            "Україна — це моя рідна земля.", "Золота осінь принесла багатий урожай.",
-            "У річці плаває срібляста рибка.", "Ми купили стиглі червоні яблука.",
-            "Лісові квіти пахнуть медом.", "У школі я знайшов вірного друга.",
-            "Дідусь читає цікаву книжку.", "Бабуся спекла запашні пиріжки."
-        ];
-
+    
+        // --- 2. УКРАЇНСЬКА МОВА / ЧИТАННЯ ---
         if (subject === 'ukr' || subject === 'reading') {
-            // Перемішуємо банк і беремо 3 речення
+            const bank = [
+                "Маленьке кошеня грається м'ячиком.", "Сьогодні світить лагідне сонечко.",
+                "Ми з татом побудували високу вежу.", "У лісі ростуть білі гриби.",
+                "Мама приготувала смачний борщ.", "Весняний вітер гойдає дерева.",
+                "На небі пливуть пухнасті хмари.", "Моя сестра малює красиву картину.",
+                "Діти весело бігають по зеленій траві.", "На столі стоїть велика ваза."
+            ];
             let selected = [...bank].sort(() => 0.5 - Math.random()).slice(0, 3);
             
-            if (level === 'excellent') {
-                // Все чисто
-                return `${dateStr}.\n${intro}.\n\n${selected.join('\n')}`;
-            } 
+            if (level === 'excellent') return `${dateStr}.\n${intro}.\n\n${selected.join('\n')}`;
             else if (level === 'good') {
-                // Робимо 1-2 дрібні помилки
                 selected[1] = selected[1].replace('смачний', 'смашний').replace('світить', 'світитт');
                 return `${dateStr}.\n${intro}.\n\n${selected.join('\n')}`;
-            } 
-            else {
-                // Слабкий учень: помилки в кожному реченні + погане оформлення
-                let messyWork = selected.slice(0, 2).map(s => 
-                    s.toLowerCase().replace(' ', '').replace('я', 'а').replace('и', 'е')
-                );
-                return `${dateStr}.\n${intro}.\n\n${messyWork.join('\n')}\nя не встиг...`;
+            } else {
+                let messy = selected.slice(0, 2).map(s => s.toLowerCase().replace(' ', '').replace('я', 'а').replace('и', 'е'));
+                return `${dateStr}.\n${intro}.\n\n${messy.join('\n')}\nя не встиг...`;
             }
         }
-
-        // --- ЛОГІКА ДЛЯ АНГЛІЙСЬКОЇ МОВИ (ПЕРСОНАЛІЗОВАНА) ---
+    
+        // --- 3. АНГЛІЙСЬКА МОВА (ПЕРСОНАЛІЗОВАНА + РАНДОМНІ ТЕМИ) ---
         if (subject === 'english') {
-            const student = students.find(s => s.id === currentSelectedStudentId) || { firstName: "I", age: 10 };
-            const name = student.firstName;
-            const age = student.age || (Math.floor(Math.random() * 4) + 7); // Якщо вік не вказано, беремо рандом 7-11
-
-            // Базові шаблони речень
-            const introEng = `Hello! My name is ${name}. I am ${age} years old.`;
-            const familyPool = [
-                "I have a big and happy family.",
-                "My mother is kind and beautiful.",
-                "My father is strong and smart.",
-                "I love my family very much.",
-                "We like to play games together."
+            // Беремо дані конкретного учня
+            const s = studentObj || students.find(st => st.id === currentSelectedStudentId) || { firstName: "Student", age: 9 };
+            const name = s.firstName;
+            const age = s.age || 9;
+    
+            // Банк тем (сім'я, кольори, хобі)
+            const topics = [
+                `Hello! My name is ${name}. I am ${age} years old. I have a big and happy family. I love my mother and father.`,
+                `Hi! I am ${name}. I am ${age}. My favourite color is blue. I like yellow sun and green grass.`,
+                `Hello! My name is ${name}. I am ${age} years old. I like to swim and jump. I have a funny dog.`
             ];
-
-            // Перемішуємо речення про сім'ю
-            let familySentences = [...familyPool].sort(() => 0.5 - Math.random()).slice(0, 2);
-            let fullText = `${introEng}\n${familySentences.join(' ')}`;
-
+    
+            let fullText = random(topics);
+    
             if (level === 'excellent') {
-                // Ідеальний текст
-                return `${dateStr}.\nHomework.\n\n${fullText}`;
-            } 
-            else if (level === 'good') {
-                // Маленькі помилки (наприклад, "am" замість "is" або пропущені літери)
-                fullText = fullText.replace('is kind', 'are kind')
-                                   .replace('years', 'yeas')
-                                   .replace('mother', 'muther');
-                return `${dateStr}.\nHomework.\n\n${fullText}`;
-            } 
-            else {
-                // Слабкий учень: плутає займенники, пише з маленької літери, пропускає слова
-                let badText = `my name ${name}. i ${age} old. i love mami and dadi.`;
-                return `${dateStr}.\nHomework.\n\n${badText}`;
+                return `${dateStr}.\n${intro}.\n\n${fullText}`;
+            } else if (level === 'good') {
+                // Типові помилки: I is, плутанина в буквах
+                fullText = fullText.replace('I am', 'I is')
+                                   .replace('favourite', 'favorit')
+                                   .replace('mother', 'muther')
+                                   .replace('beautiful', 'biutiful')
+                                   .replace('family', 'femily');
+                return `${dateStr}.\n${intro}.\n\n${fullText}`;
+            } else {
+                // Дуже слабкий рівень
+                let badText = `my name ${name}. i ${age} old. i love mami and dadi. i like blue color.`;
+                return `${dateStr}.\n${intro}.\n\n${badText}`;
             }
         }
-
+    
+        // Запасний варіант для інших предметів
         return `${dateStr}.\n${intro}.\n\nЗавдання: ${task}\n(Роботу виконано)`;
     }
 
