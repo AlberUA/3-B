@@ -76,7 +76,7 @@
 </div>
 
 <script>
-    // 1. КОНФІГУРАЦІЯ FIREBASE
+    // 1. КОНФІГУРАЦІЯ FIREBASE (залишається вашою)
     const firebaseConfig = {
         apiKey: "AIzaSyC_B3MJTramTQ4PEj8Ws6pEIambP-JJ1rg",
         authDomain: "darya-school.firebaseapp.com",
@@ -87,63 +87,51 @@
         appId: "1:228276864041:web:8e46975a0a9140e0580838"
     };
 
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
 
-    // 2. ЗАХИСТ: Перевірка авторизації
     firebase.auth().onAuthStateChanged((user) => {
-        if (!user) {
-            window.location.href = "login.html";
-        }
+        if (!user) window.location.href = "login.html";
     });
     
     const database = firebase.database();
     const studentsRef = database.ref('students_v2');
     const gradesRef = database.ref('grades_v2');
 
-    // Локальні змінні для даних
     let students = [];
     let allGrades = {};
-    
-    // Посилання на об'єкти графіків (щоб оновлювати їх без помилок)
     let subjectsChart = null;
     let genderChart = null;
 
-    // СЛУХАЧІ ДАНИХ (Реальний час)
-    
-    // 1. Отримання учнів
+    // СЛУХАЧІ
     studentsRef.on('value', (snapshot) => {
         const data = snapshot.val();
-        students = [];
-        if (data) {
-            // Перетворюємо об'єкт Firebase у масив
-            Object.keys(data).forEach(key => {
-                students.push({ id: key, ...data[key] });
-            });
-        }
-        updateAnalytics(); // Перемальовуємо все, коли прийшли учні
+        students = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+        updateAnalytics();
     });
 
-    // 2. Отримання оцінок
     gradesRef.on('value', (snapshot) => {
         allGrades = snapshot.val() || {};
-        updateAnalytics(); // Перемальовуємо все, коли прийшли оцінки
+        updateAnalytics();
     });
 
-    // ГОЛОВНА ФУНКЦІЯ РОЗРАХУНКУ ТА РЕНДЕРУ
     function updateAnalytics() {
-        // Якщо даних ще немає, не малюємо
         if (students.length === 0) return;
 
-        // --- 2. Рахуємо загальні показники ---
+        // 1. Загальна кількість
         document.getElementById('totalCount').innerText = students.length;
 
-        // Рахуємо іменинників цього місяця
+        // 2. Іменинники (виправлено порівняння місяців)
         const currentMonth = new Date().getMonth();
-        const bdays = students.filter(s => new Date(s.birthDate).getMonth() === currentMonth).length;
+        const bdays = students.filter(s => {
+            if (!s.birthDate) return false;
+            return new Date(s.birthDate).getMonth() === currentMonth;
+        }).length;
         document.getElementById('bdayCount').innerText = bdays;
 
-        // --- 3. Логіка для графіка предметів ---
-        const subjects = {
+        // 3. Предмети
+        const subjectMap = {
             math: "Математика",
             ukr: "Укр. мова",
             reading: "Читання",
@@ -151,65 +139,72 @@
             world: "ЯДС"
         };
 
-        const avgData = Object.keys(subjects).map(subKey => {
+        const subjectKeys = Object.keys(subjectMap);
+        const avgData = subjectKeys.map(subKey => {
             let sum = 0;
             let count = 0;
             
-            // Проходимо по всіх оцінках, які прийшли з Firebase
             Object.keys(allGrades).forEach(gradeKey => {
-                // Ключ у Firebase виглядає як: subject_studentId_column
-                // Перевіряємо, чи цей ключ починається з потрібного предмета
-                if (gradeKey.startsWith(subKey) && allGrades[gradeKey] !== "") {
-                    sum += parseInt(allGrades[gradeKey]);
-                    count++;
+                // Перевіряємо чи ключ оцінки належить предмету (напр. math_ID_1)
+                if (gradeKey.startsWith(subKey)) {
+                    const val = parseInt(allGrades[gradeKey]);
+                    if (!isNaN(val)) {
+                        sum += val;
+                        count++;
+                    }
                 }
             });
-            return count > 0 ? (sum / count).toFixed(1) : 0;
+            return count > 0 ? parseFloat((sum / count).toFixed(1)) : 0;
         });
 
-        // Вивід загального середнього балу класу
-        const totalAvgRaw = (avgData.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / avgData.length).toFixed(1);
+        // 4. Розрахунок загального середнього балу класу (тільки по існуючих оцінках)
+        const activeSubjects = avgData.filter(val => val > 0);
+        const totalAvgRaw = activeSubjects.length > 0 
+            ? (activeSubjects.reduce((a, b) => a + b, 0) / activeSubjects.length).toFixed(1) 
+            : "0.0";
+        
         document.getElementById('classAvg').innerText = totalAvgRaw;
 
-        // --- 4. Малюємо графіки ---
-        
-        // Графік предметів (Бар)
-        const ctxSubjects = document.getElementById('subjectsChart').getContext('2d');
-        
-        // Якщо графік вже існує, знищуємо його перед малюванням нового
+        // --- ГРАФІКИ ---
+
+        // Бар-чарт предметів
+        const ctxSub = document.getElementById('subjectsChart').getContext('2d');
         if (subjectsChart) subjectsChart.destroy();
-        
-        subjectsChart = new Chart(ctxSubjects, {
+        subjectsChart = new Chart(ctxSub, {
             type: 'bar',
             data: {
-                labels: Object.values(subjects),
+                labels: Object.values(subjectMap),
                 datasets: [{
-                    label: 'Середній бал класу',
+                    label: 'Середній бал',
                     data: avgData,
                     backgroundColor: 'rgba(155, 89, 182, 0.6)',
                     borderColor: 'rgba(155, 89, 182, 1)',
                     borderWidth: 1
                 }]
             },
-            options: { scales: { y: { beginAtZero: true, max: 12 } } }
+            options: { 
+                responsive: true,
+                scales: { y: { beginAtZero: true, max: 12 } } 
+            }
         });
 
-        // Графік статі (Донат)
-        const ctxGender = document.getElementById('genderChart').getContext('2d');
+        // Донат статі
+        const ctxGen = document.getElementById('genderChart').getContext('2d');
         const boys = students.filter(s => s.gender === 'Хлопчик').length;
         const girls = students.filter(s => s.gender === 'Дівчинка').length;
 
         if (genderChart) genderChart.destroy();
-        
-        genderChart = new Chart(ctxGender, {
+        genderChart = new Chart(ctxGen, {
             type: 'doughnut',
             data: {
                 labels: ['Хлопчики', 'Дівчатка'],
                 datasets: [{
                     data: [boys, girls],
-                    backgroundColor: ['#3498db', '#e74c3c']
+                    backgroundColor: ['#3498db', '#e74c3c'],
+                    hoverOffset: 4
                 }]
-            }
+            },
+            options: { responsive: true }
         });
     }
 </script>
