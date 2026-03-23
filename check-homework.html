@@ -241,24 +241,29 @@
         }
     });
 
-    // 2. РЕНДЕР СПИСКУ
+    // 2. РЕНДЕР СПИСКУ (БЕЗ ПІДКАЗОК РІВНЯ)
     function renderStudentList() {
         const list = document.getElementById('studentList');
         list.innerHTML = '';
+        
         if (students.length === 0) {
-            list.innerHTML = '<p style="color:#95a5a6;">Спершу додайте учнів у "Реєстрації"</p>';
+            list.innerHTML = '<p style="color:#95a5a6; padding: 10px;">Спершу додайте учнів у "Реєстрації"</p>';
             return;
         }
+    
         students.forEach(s => {
             const item = document.createElement('div');
             item.className = 'student-item';
             item.id = `student-${s.id}`;
             item.onclick = () => showStudentNotebook(s.id);
-            const levelMap = { 'excellent': 'Відмінник', 'good': 'Хорошист', 'needs_help': 'Слабкий' };
-            // Замість виводу рівня, виведемо просто номер у списку або статус "Зошит здано"
+            
+            // Виводимо тільки Прізвище та Ім'я. 
+            // Статус "Зошит здано" додає візуального спокою.
             item.innerHTML = `
                 <div class="student-name"><strong>${s.lastName}</strong> ${s.firstName}</div>
-                <div class="student-level" style="color: #27ae60;">● Роботу здано</div>
+                <div class="student-status" style="font-size: 0.8em; color: #27ae60; margin-top: 4px;">
+                    <span style="opacity: 0.6;">●</span> Зошит на столі
+                </div>
             `;
             list.appendChild(item);
         });
