@@ -374,21 +374,28 @@
         document.getElementById('currentStudentName').innerText = `${student.firstName} ${student.lastName}`;
     }
     
-    // 5. ГНУЧКА ЛОГІКА ШІ (ФІКС ДЛЯ АНГЛІЙСЬКОЇ)
+    // 5. ГНУЧКА ЛОГІКА ШІ (ФІКС ВІКУ ТА ПРЕДМЕТІВ)
     function getAIGeneratedResponse(subject, level, task, studentObj) {
         const now = new Date();
         const dateStr = now.toLocaleDateString('uk-UA');
         const random = (arr) => arr[Math.floor(Math.random() * arr.length)];
         
-        // Приводимо назву предмета до нижнього регістру для надійності
         const sub = subject ? subject.toLowerCase() : '';
     
-        // --- 1. АНГЛІЙСЬКА МОВА (Перевіряємо різні варіанти написання) ---
-        if (sub === 'english' || sub === 'eng' || sub === 'англійська') {
-            const s = studentObj || students.find(st => st.id === currentSelectedStudentId) || { firstName: "I", age: 9 };
-            const name = s.firstName || "I";
-            const age = s.age || 9;
+        // --- ЛОГІКА ПОШУКУ АКТУАЛЬНИХ ДАНИХ УЧНЯ ---
+        // Шукаємо учня: спочатку з переданого об'єкта, потім за ID
+        const s = studentObj || students.find(st => st.id === currentSelectedStudentId);
+        
+        const name = (s && s.firstName) ? s.firstName : "I";
+        
+        // ПЕРЕВІРКА ВІКУ: пробуємо всі можливі назви полів (age, userAge, studentAge)
+        let age = 9; // Значення за замовчуванням
+        if (s) {
+            age = s.age || s.userAge || s.studentAge || 9;
+        }
     
+        // --- 1. АНГЛІЙСЬКА МОВА ---
+        if (sub === 'english' || sub === 'eng' || sub === 'англійська') {
             const topics = [
                 `Hello! My name is ${name}. I am ${age} years old. I have a big family. I love my mother and father.`,
                 `Hi! I am ${name}. I am ${age}. My favourite color is blue. I like yellow sun and green grass.`,
@@ -401,9 +408,11 @@
             if (level === 'excellent') {
                 return `${dateStr}.\nHomework.\n\n${fullText}`;
             } else if (level === 'good') {
+                // Типові помилки для 2-4 класу
                 fullText = fullText.replace('I am', 'I is').replace('favourite', 'favorit').replace('mother', 'muther');
                 return `${dateStr}.\nHomework.\n\n${fullText}`;
             } else {
+                // Слабкий рівень (без дієслів, маленькі літери)
                 return `${dateStr}.\nHomework.\n\nmy name ${name}. i ${age} old. i love mami. i like blue color.`;
             }
         }
@@ -434,7 +443,6 @@
             return `${dateStr}.\nВправа 14.\n\n${selected[0].toLowerCase().replace(' ', '')}\nя не встиг...`;
         }
     
-        // Якщо нічого не підійшло (запасний варіант)
         return `${dateStr}.\nДомашнє завдання.\n\nЗавдання: ${task}\n(Виконано)`;
     }
 
