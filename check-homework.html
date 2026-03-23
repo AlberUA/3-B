@@ -255,9 +255,10 @@
             item.id = `student-${s.id}`;
             item.onclick = () => showStudentNotebook(s.id);
             const levelMap = { 'excellent': 'Відмінник', 'good': 'Хорошист', 'needs_help': 'Слабкий' };
+            // Замість виводу рівня, виведемо просто номер у списку або статус "Зошит здано"
             item.innerHTML = `
                 <div class="student-name"><strong>${s.lastName}</strong> ${s.firstName}</div>
-                <div class="student-level">${levelMap[s.level] || 'Невказано'}</div>
+                <div class="student-level" style="color: #27ae60;">● Роботу здано</div>
             `;
             list.appendChild(item);
         });
@@ -270,22 +271,37 @@
         
         database.ref('homework_v2').once('value', (snapshot) => {
             const allHomework = snapshot.val() || {};
-            let lastTaskDescription = "Робота над завданням з підручника.";
+            let lastTaskDescription = "Робота над завданням.";
             for (let i = 1; i <= 15; i++) {
                 const task = allHomework[`${subject}_hw_${i}`];
                 if (task && task.trim() !== "") { lastTaskDescription = task; }
             }
-
+    
             students.forEach(s => {
-                generatedResponses[s.id] = getAIGeneratedResponse(subject, s.level, lastTaskDescription);
+                // --- НОВА ЛОГІКА: ВПАДКОВИЙ СТАН ---
+                // 70% шанс, що учень напише за своїм рівнем
+                // 30% шанс, що рівень зміниться (втома або натхнення)
+                let currentEffort = s.level; 
+                const luck = Math.random();
+    
+                if (luck > 0.7) { // 30% випадків рівень "пливе"
+                    const levels = ['excellent', 'good', 'needs_help'];
+                    currentEffort = levels[Math.floor(Math.random() * levels.length)];
+                }
+    
+                // Зберігаємо роботу з урахуванням тимчасового стану
+                generatedResponses[s.id] = {
+                    text: getAIGeneratedResponse(subject, currentEffort, lastTaskDescription),
+                    tempLevel: currentEffort // Запам'ятовуємо, в якому стані написана ЦЯ робота
+                };
             });
-
-            alert(`Роботи з предмета згенеровано!`);
+    
+            alert(`Роботи згенеровано! Сьогодні діти старалися по-різному...`);
             if (currentSelectedStudentId) showStudentNotebook(currentSelectedStudentId);
         });
     };
 
-    // 4. ВІДОБРАЖЕННЯ ЗОШИТА (ПОВНІСТЮ ВИПРАВЛЕНО)
+    // 4. ВІДОБРАЖЕННЯ ЗОШИТА (ПОВНІСТЮ ВИПРАВЛЕНО ТА ОПТИМІЗОВАНО)
     function showStudentNotebook(studentId) {
         currentSelectedStudentId = studentId;
         const subject = document.getElementById('subjectSelect').value;
@@ -293,34 +309,49 @@
         
         if (!student) return;
 
-        // --- 1. СПОЧАТКУ ОГОЛОШУЄМО ЗМІННІ (ЕЛЕМЕНТИ) ---
+        // --- 1. ОГОЛОШУЄМО ЕЛЕМЕНТИ ---
         const notebookPage = document.querySelector('.notebook-page');
         const notebookTextBlock = document.getElementById('notebookText');
         const archiveList = document.getElementById('archiveList');
         const archiveContainer = document.getElementById('gradesArchive');
 
-        // --- 2. ТЕПЕР МОЖНА ПРАЦЮВАТИ З КЛАСАМИ ---
-        // Очищаємо всі старі ефекти
+        // Отримуємо дані про роботу (об'єкт {text, tempLevel})
+        const responseData = generatedResponses[studentId];
+        // Визначаємо рівень для цієї конкретної перевірки
+        const displayLevel = responseData ? responseData.tempLevel : student.level;
+
+        // --- 2. ВІЗУАЛЬНІ ЕФЕКТИ (КЛАСИ) ---
+        // Скидаємо все зайве
         notebookPage.classList.remove('messy', 'perfect', 'math');
         notebookTextBlock.classList.remove('handwriting-excellent', 'handwriting-good', 'handwriting-needs_help');
 
-        // Додаємо клітинку, якщо це математика
+        // Клітинка для математики
         if (subject === 'math') {
             notebookPage.classList.add('math');
         }
 
-        // Додаємо візуальний рівень учня
-        if (student.level === 'excellent') {
+        // Застосовуємо стиль почерку та сторінки на основі ДИНАМІЧНОГО рівня
+        if (displayLevel === 'excellent') {
             notebookPage.classList.add('perfect');
             notebookTextBlock.classList.add('handwriting-excellent');
-        } else if (student.level === 'needs_help') {
+        } else if (displayLevel === 'needs_help') {
             notebookPage.classList.add('messy');
             notebookTextBlock.classList.add('handwriting-needs_help');
         } else {
             notebookTextBlock.classList.add('handwriting-good');
         }
 
-        // --- 3. ЗАВАНТАЖЕННЯ АРХІВУ ---
+        // --- 3. ТЕКСТ ТА КОЛІР ПАСТИ ---
+        const blueShades = ['#2c3e50', '#000080', '#191970', '#1e3799'];
+        const randomBlue = blueShades[Math.floor(Math.random() * blueShades.length)];
+        
+        notebookTextBlock.style.color = randomBlue;
+        notebookTextBlock.style.textDecoration = "none"; 
+
+        // ВАЖЛИВО: Витягуємо саме поле .text з об'єкта
+        notebookTextBlock.innerText = responseData ? responseData.text : "Натисніть кнопку генерації.";
+
+        // --- 4. ЗАВАНТАЖЕННЯ АРХІВУ ---
         archiveList.innerHTML = ''; 
         database.ref('grades_v2').once('value', (snapshot) => {
             const allGrades = snapshot.val() || {};
@@ -344,16 +375,6 @@
             }
             archiveContainer.style.display = hasGrades ? 'block' : 'none';
         });
-
-        // --- 4. КОЛІР ПАСТИ ТА ТЕКСТ ---
-        const blueShades = ['#2c3e50', '#000080', '#191970', '#1e3799'];
-        const randomBlue = blueShades[Math.floor(Math.random() * blueShades.length)];
-        
-        notebookTextBlock.style.color = randomBlue;
-        notebookTextBlock.style.textDecoration = "none"; 
-
-        const text = generatedResponses[studentId];
-        notebookTextBlock.innerText = text || "Натисніть кнопку генерації.";
 
         // --- 5. ОНОВЛЕННЯ ІНТЕРФЕЙСУ ---
         document.querySelectorAll('.student-item').forEach(item => item.classList.remove('active'));
