@@ -374,76 +374,90 @@
         document.getElementById('currentStudentName').innerText = `${student.firstName} ${student.lastName}`;
     }
     
-    // 5. УНІВЕРСАЛЬНА ЛОГІКА: ТЕКСТ АБО ОЦІНКА
+   // 5. ФІНАЛЬНА УНІВЕРСАЛЬНА ЛОГІКА (УСІ ПРЕДМЕТИ + ОЦІНКИ)
     function getAIGeneratedResponse(subject, level, task, studentObj) {
         const now = new Date();
         const dateStr = now.toLocaleDateString('uk-UA');
         const random = (arr) => arr[Math.floor(Math.random() * arr.length)];
         const sub = subject ? subject.toLowerCase() : '';
     
-        // --- ПОШУК ДАНИХ УЧНЯ (ФІКС ВІКУ) ---
+        // --- ПОШУК ДАНИХ УЧНЯ ---
         const s = studentObj || students.find(st => st.id === currentSelectedStudentId);
         const name = (s && s.firstName) ? s.firstName : "Учень";
         
-        // Шукаємо вік у всіх можливих полях бази
         let age = 9; 
         if (s) {
             let rawAge = s.age || s.userAge || s.years || s.studentAge || s['вік'] || 9;
             age = (typeof rawAge === 'string') ? (parseInt(rawAge.match(/\d+/)) || 9) : rawAge;
         }
     
-        // --- ПЕРЕВІРКА: ГЕНЕРУЄМО ТЕКСТ ЧИ ПРОСТО ОЦІНКУ? ---
-        // Якщо в завданні є слова "оцінка", "бал" або предмет - Фізкультура/ЯДС/Читання без тексту
+        // --- ПЕРЕВІРКА НА ОЦІНЮВАННЯ (УСНІ ПРЕДМЕТИ) ---
         const isGradingOnly = task.toLowerCase().includes('оцінка') || 
                              task.toLowerCase().includes('бал') || 
-                             ['pe', 'япс', 'ядс', 'reading', 'art'].includes(sub);
+                             ['pe', 'япс', 'ядс', 'art', 'music'].includes(sub);
     
         if (isGradingOnly) {
             let mark = 12;
             let feedback = "";
-    
             if (level === 'excellent') {
                 mark = random([10, 11, 12]);
-                feedback = random(["Відмінно!", "Чудова робота на уроці.", "Молодець, дуже активно!", "Високий рівень знань."]);
+                feedback = random(["Відмінно!", "Чудова робота.", "Високий рівень!"]);
             } else if (level === 'good') {
                 mark = random([7, 8, 9]);
-                feedback = random(["Добре, але будь уважнішим.", "Гарна відповідь.", "Старайся більше.", "Достатній рівень."]);
+                feedback = random(["Добре, старайся ще.", "Гарна відповідь.", "Достатньо."]);
             } else {
                 mark = random([4, 5, 6]);
-                feedback = random(["Потрібно краще готуватися.", "Сьогодні слабенько.", "Читай уважніше завдання.", "Спробуй ще раз."]);
+                feedback = random(["Потрібно підтягнути тему.", "Слабенько.", "Будь уважнішим."]);
             }
-    
             return `${dateStr}.\nОцінювання (${subject}).\n\nРезультат: ${mark} балів.\nКоментар: ${feedback}`;
         }
     
-        // --- ЯКЩО ПОТРІБЕН ТЕКСТ (АНГЛІЙСЬКА, МАТЕМАТИКА ТА ІНШЕ) ---
-        
-        // Англійська (з реальним віком)
+        // --- 1. УКРАЇНСЬКА МОВА (ПОВЕРНУТО БАНК) ---
+        if (sub === 'ukr' || sub === 'укр' || sub === 'reading' || sub === 'читання') {
+            const bank = [
+                "Маленьке кошеня грається м'ячиком.", "Сьогодні світить лагідне сонечко.",
+                "Ми з татом побудували високу вежу.", "У лісі ростуть білі гриби.",
+                "Мама приготувала смачний борщ.", "Україна — це моя рідна земля.",
+                "Дідусь читає цікаву книжку.", "Бабуся спекла запашні пиріжки."
+            ];
+            let selected = [...bank].sort(() => 0.5 - Math.random()).slice(0, 3);
+            
+            if (level === 'excellent') return `${dateStr}.\nДомашня робота.\n\n${selected.join('\n')}`;
+            if (level === 'good') return `${dateStr}.\nДомашня робота.\n\n${selected[0]}\n${selected[1].replace('смачний', 'смашний')}\n${selected[2]}`;
+            // Для рівня needs_help (слабкий)
+            return `${dateStr}.\nДомашня робота.\n\n${selected[0].toLowerCase().replace(' ', '')}...\nя не встиг зробити все.`;
+        }
+    
+        // --- 2. АНГЛІЙСЬКА МОВА ---
         if (sub === 'english' || sub === 'eng') {
             const engText = random([
                 `Hello! My name is ${name}. I am ${age} years old. I love my family.`,
-                `Hi! I am ${name}. I am ${age}. My favourite color is blue.`
+                `Hi! I am ${name}. I am ${age}. My favourite color is blue.`,
+                `Hello! My name is ${name}. I am ${age} years old. I have a funny dog.`
             ]);
             if (level === 'excellent') return `${dateStr}.\nHomework.\n\n${engText}`;
-            return `${dateStr}.\nHomework.\n\nmy name ${name}. i ${age} old.`;
+            if (level === 'good') return `${dateStr}.\nHomework.\n\n${engText.replace('I am', 'I is')}`;
+            return `${dateStr}.\nHomework.\n\nmy name ${name}. i ${age} old. i love mami.`;
         }
     
-        // Математика
-        if (sub === 'math') {
+        // --- 3. МАТЕМАТИКА ---
+        if (sub === 'math' || sub === 'математика') {
             const mathRegex = /(\d+[\+\-\*\/x:]\d+)/g; 
             const found = task.match(mathRegex);
             let content = "";
             if (found) {
                 found.forEach((ex, i) => {
                     let res = eval(ex.replace(':', '/').replace('x', '*'));
-                    content += `${i+1}) ${ex} = ${level==='excellent' ? res : res+1}\n`;
+                    let finalRes = (level === 'excellent') ? res : (level === 'good' ? (Math.random() > 0.7 ? res + 1 : res) : Math.floor(Math.random() * 50));
+                    content += `${i+1}) ${ex} = ${finalRes}\n`;
                 });
             }
             return `${dateStr}.\nДомашня робота.\n\n${content || "Приклади розв'язано."}`;
         }
     
-        // Запасний варіант для всього іншого
-        return `${dateStr}.\nДомашня робота.\n\nЗавдання виконано на рівні: ${level}.`;
+        // Запасний варіант (якщо предмет не розпізнано)
+        let levelText = level === 'excellent' ? 'Відмінно' : (level === 'good' ? 'Добре' : 'Потребує уваги');
+        return `${dateStr}.\nДомашня робота.\n\nЗавдання виконано.\nРівень: ${levelText}.`;
     }
 
     // 6. ОЦІНКА ТА ЗВУК
