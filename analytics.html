@@ -145,10 +145,20 @@
             let count = 0;
             
             Object.keys(allGrades).forEach(gradeKey => {
-                // Перевіряємо чи ключ оцінки належить предмету (напр. math_ID_1)
-                if (gradeKey.startsWith(subKey)) {
-                    const val = parseInt(allGrades[gradeKey]);
-                    if (!isNaN(val)) {
+                // Ключ у журналі: subject_studentId_column
+                // Перевіряємо, чи він починається з subKey (напр. "world_")
+                if (gradeKey.startsWith(subKey + "_")) {
+                    const rawVal = allGrades[gradeKey];
+                    let val = 0;
+        
+                    // Перевірка на формат об'єкта (якщо є коментар) або просто числа
+                    if (rawVal && typeof rawVal === 'object') {
+                        val = parseInt(rawVal.value);
+                    } else {
+                        val = parseInt(rawVal);
+                    }
+        
+                    if (!isNaN(val) && val > 0) {
                         sum += val;
                         count++;
                     }
