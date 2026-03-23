@@ -281,27 +281,24 @@
                 const task = allHomework[`${subject}_hw_${i}`];
                 if (task && task.trim() !== "") { lastTaskDescription = task; }
             }
-    
+
             students.forEach(s => {
-                // --- НОВА ЛОГІКА: ВПАДКОВИЙ СТАН ---
-                // 70% шанс, що учень напише за своїм рівнем
-                // 30% шанс, що рівень зміниться (втома або натхнення)
+                // Шанс 50/50, що рівень зміниться (для тестування)
                 let currentEffort = s.level; 
-                const luck = Math.random();
-    
-                if (luck > 0.7) { // 30% випадків рівень "пливе"
+                if (Math.random() > 0.5) { 
                     const levels = ['excellent', 'good', 'needs_help'];
                     currentEffort = levels[Math.floor(Math.random() * levels.length)];
                 }
-    
-                // Зберігаємо роботу з урахуванням тимчасового стану
+
+                console.log(`Учень ${s.lastName}: базовий ${s.level} -> сьогодні пише як ${currentEffort}`);
+
                 generatedResponses[s.id] = {
                     text: getAIGeneratedResponse(subject, currentEffort, lastTaskDescription),
-                    tempLevel: currentEffort // Запам'ятовуємо, в якому стані написана ЦЯ робота
+                    tempLevel: currentEffort
                 };
             });
-    
-            alert(`Роботи згенеровано! Сьогодні діти старалися по-різному...`);
+
+            alert(`Роботи згенеровано! Перевірте зошити.`);
             if (currentSelectedStudentId) showStudentNotebook(currentSelectedStudentId);
         });
     };
@@ -311,31 +308,25 @@
         currentSelectedStudentId = studentId;
         const subject = document.getElementById('subjectSelect').value;
         const student = students.find(s => s.id === studentId);
-        
         if (!student) return;
 
-        // --- 1. ОГОЛОШУЄМО ЕЛЕМЕНТИ ---
         const notebookPage = document.querySelector('.notebook-page');
         const notebookTextBlock = document.getElementById('notebookText');
         const archiveList = document.getElementById('archiveList');
         const archiveContainer = document.getElementById('gradesArchive');
 
-        // Отримуємо дані про роботу (об'єкт {text, tempLevel})
+        // Визначаємо рівень: пріоритет у випадкового tempLevel
         const responseData = generatedResponses[studentId];
-        // Визначаємо рівень для цієї конкретної перевірки
         const displayLevel = responseData ? responseData.tempLevel : student.level;
 
-        // --- 2. ВІЗУАЛЬНІ ЕФЕКТИ (КЛАСИ) ---
-        // Скидаємо все зайве
+        // Скидаємо класи
         notebookPage.classList.remove('messy', 'perfect', 'math');
         notebookTextBlock.classList.remove('handwriting-excellent', 'handwriting-good', 'handwriting-needs_help');
 
-        // Клітинка для математики
-        if (subject === 'math') {
-            notebookPage.classList.add('math');
-        }
+        // 1. ФОН
+        if (subject === 'math') notebookPage.classList.add('math');
 
-        // Застосовуємо стиль почерку та сторінки на основі ДИНАМІЧНОГО рівня
+        // 2. СТИЛЬ (Тільки один раз на основі displayLevel!)
         if (displayLevel === 'excellent') {
             notebookPage.classList.add('perfect');
             notebookTextBlock.classList.add('handwriting-excellent');
@@ -346,17 +337,12 @@
             notebookTextBlock.classList.add('handwriting-good');
         }
 
-        // --- 3. ТЕКСТ ТА КОЛІР ПАСТИ ---
+        // 3. ТЕКСТ
         const blueShades = ['#2c3e50', '#000080', '#191970', '#1e3799'];
-        const randomBlue = blueShades[Math.floor(Math.random() * blueShades.length)];
-        
-        notebookTextBlock.style.color = randomBlue;
-        notebookTextBlock.style.textDecoration = "none"; 
-
-        // ВАЖЛИВО: Витягуємо саме поле .text з об'єкта
+        notebookTextBlock.style.color = randomBlue = blueShades[Math.floor(Math.random() * blueShades.length)];
         notebookTextBlock.innerText = responseData ? responseData.text : "Натисніть кнопку генерації.";
 
-        // --- 4. ЗАВАНТАЖЕННЯ АРХІВУ ---
+        // --- РЕШТА КОДУ (архів, інтерфейс) залишається без змін ---
         archiveList.innerHTML = ''; 
         database.ref('grades_v2').once('value', (snapshot) => {
             const allGrades = snapshot.val() || {};
@@ -369,23 +355,19 @@
                     const val = typeof gradeData === 'object' ? gradeData.value : gradeData;
                     const comm = typeof gradeData === 'object' ? gradeData.comment : '';
                     const date = typeof gradeData === 'object' ? gradeData.date : 'Раніше';
-
                     const gradeBox = document.createElement('div');
                     gradeBox.style = `background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd; font-size: 0.9em; min-width: 60px; text-align: center; cursor: help;`;
                     gradeBox.title = comm || "Без коментаря";
-                    gradeBox.innerHTML = `<div style="color: #e74c3c; font-weight: bold; font-size: 1.2em;">${val}</div>
-                                          <div style="font-size: 0.7em; color: #95a5a6;">${date}</div>`;
+                    gradeBox.innerHTML = `<div style="color: #e74c3c; font-weight: bold; font-size: 1.2em;">${val}</div><div style="font-size: 0.7em; color: #95a5a6;">${date}</div>`;
                     archiveList.appendChild(gradeBox);
                 }
             }
             archiveContainer.style.display = hasGrades ? 'block' : 'none';
         });
 
-        // --- 5. ОНОВЛЕННЯ ІНТЕРФЕЙСУ ---
         document.querySelectorAll('.student-item').forEach(item => item.classList.remove('active'));
         const el = document.getElementById(`student-${studentId}`);
         if(el) el.classList.add('active');
-
         document.getElementById('emptyMsg').style.display = 'none';
         document.getElementById('notebookContainer').style.display = 'block';
         document.getElementById('gradeSticker').style.display = 'none';
