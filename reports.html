@@ -33,6 +33,23 @@
         h1 { border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
         
         .no-data { text-align: center; padding: 50px; color: #95a5a6; font-style: italic; }
+
+        /* Нові стилі для картки успішності */
+        .overall-stats {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #3498db, #8e44ad);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+        .stat-card span { font-size: 0.9em; opacity: 0.9; }
+        .stat-card div { font-size: 2em; font-weight: bold; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -55,6 +72,13 @@
                 <option value="eng">Англійська мова</option>
                 <option value="world">Я досліджую світ</option>
             </select>
+        </div>
+    </div>
+
+    <div class="overall-stats" id="statsContainer" style="display:none;">
+        <div class="stat-card">
+            <span>Загальна успішність (сер. бал)</span>
+            <div id="studentAverage">0.0</div>
         </div>
     </div>
 
@@ -131,23 +155,48 @@
         }
     });
 
-    // ФУНКЦІЯ ОНОВЛЕННЯ ГРАФІКА
+    // ФУНКЦІЯ ОНОВЛЕННЯ ГРАФІКА ТА РОЗРАХУНКУ СЕРЕДНЬОГО БАЛУ
     window.updateChart = function() {
         const studentId = document.getElementById('studentSelect').value;
         const subject = document.getElementById('subjectSelect').value;
+        const statsContainer = document.getElementById('statsContainer');
+        const studentAverage = document.getElementById('studentAverage');
         
-        if (!studentId) return;
-
+        if (!studentId) {
+            statsContainer.style.display = 'none';
+            return;
+        }
+    
         const studentData = students.find(s => s.id === studentId);
+        
+        // --- РОЗРАХУНОК ЗАГАЛЬНОЇ УСПІШНОСТІ (по всіх предметах) ---
+        let totalSum = 0;
+        let totalCount = 0;
+        const allSubjectKeys = ['math', 'ukr', 'reading', 'eng', 'world'];
+    
+        Object.keys(allGrades).forEach(key => {
+            // Ключ має містити ID учня (формат: subject_studentId_column)
+            if (key.includes(`_${studentId}_`)) {
+                const val = parseInt(allGrades[key]);
+                if (!isNaN(val)) {
+                    totalSum += val;
+                    totalCount++;
+                }
+            }
+        });
+    
+        const finalAvg = totalCount > 0 ? (totalSum / totalCount).toFixed(1) : "0.0";
+        studentAverage.innerText = finalAvg;
+        statsContainer.style.display = 'flex';
+    
+        // --- ЛОГІКА ГРАФІКА (залишається по конкретному предмету) ---
         let gradesArray = [];
         let labelsArray = [];
         let hasData = false;
-
-        // Збираємо оцінки (12 уроків) за ключем: subject_studentId_column
+    
         for(let i=1; i<=12; i++) {
             const key = `${subject}_${studentId}_${i}`;
             const val = allGrades[key];
-            
             labelsArray.push(`${i}`);
             if (val && !isNaN(val)) {
                 gradesArray.push(parseInt(val));
@@ -156,11 +205,11 @@
                 gradesArray.push(null); 
             }
         }
-
+    
         const ctx = document.getElementById('progressChart').getContext('2d');
         const emptyMsg = document.getElementById('emptyMsg');
         const chartWrapper = document.getElementById('chartWrapper');
-
+    
         if (!hasData) {
             emptyMsg.style.display = 'block';
             chartWrapper.style.opacity = '0';
@@ -170,15 +219,15 @@
             emptyMsg.style.display = 'none';
             chartWrapper.style.opacity = '1';
         }
-
+    
         if (myChart) myChart.destroy();
-
+    
         myChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labelsArray,
                 datasets: [{
-                    label: `Прогрес: ${studentData.lastName}`,
+                    label: `Прогрес (${document.getElementById('subjectSelect').options[document.getElementById('subjectSelect').selectedIndex].text})`,
                     data: gradesArray,
                     borderColor: '#3498db',
                     backgroundColor: 'rgba(52, 152, 219, 0.1)',
@@ -194,11 +243,7 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    y: { 
-                        beginAtZero: true, 
-                        max: 12,
-                        ticks: { stepSize: 1 }
-                    }
+                    y: { beginAtZero: true, max: 12, ticks: { stepSize: 1 } }
                 }
             }
         });
