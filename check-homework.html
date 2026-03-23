@@ -435,6 +435,44 @@
             }
         }
 
+        // --- ЛОГІКА ДЛЯ АНГЛІЙСЬКОЇ МОВИ (ПЕРСОНАЛІЗОВАНА) ---
+        if (subject === 'english') {
+            const student = students.find(s => s.id === currentSelectedStudentId) || { firstName: "I", age: 10 };
+            const name = student.firstName;
+            const age = student.age || (Math.floor(Math.random() * 4) + 7); // Якщо вік не вказано, беремо рандом 7-11
+
+            // Базові шаблони речень
+            const introEng = `Hello! My name is ${name}. I am ${age} years old.`;
+            const familyPool = [
+                "I have a big and happy family.",
+                "My mother is kind and beautiful.",
+                "My father is strong and smart.",
+                "I love my family very much.",
+                "We like to play games together."
+            ];
+
+            // Перемішуємо речення про сім'ю
+            let familySentences = [...familyPool].sort(() => 0.5 - Math.random()).slice(0, 2);
+            let fullText = `${introEng}\n${familySentences.join(' ')}`;
+
+            if (level === 'excellent') {
+                // Ідеальний текст
+                return `${dateStr}.\nHomework.\n\n${fullText}`;
+            } 
+            else if (level === 'good') {
+                // Маленькі помилки (наприклад, "am" замість "is" або пропущені літери)
+                fullText = fullText.replace('is kind', 'are kind')
+                                   .replace('years', 'yeas')
+                                   .replace('mother', 'muther');
+                return `${dateStr}.\nHomework.\n\n${fullText}`;
+            } 
+            else {
+                // Слабкий учень: плутає займенники, пише з маленької літери, пропускає слова
+                let badText = `my name ${name}. i ${age} old. i love mami and dadi.`;
+                return `${dateStr}.\nHomework.\n\n${badText}`;
+            }
+        }
+
         return `${dateStr}.\n${intro}.\n\nЗавдання: ${task}\n(Роботу виконано)`;
     }
 
